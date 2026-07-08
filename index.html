@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Painel de Sistemas</title>
+
+<!-- PWA: manifest e ícones -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1e3a">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+<!-- Comportamento de app instalado (iOS / Android) -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Painel">
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
@@ -163,6 +178,47 @@
   .card:hover .card-delete{ display:block; }
   .card-delete:hover{ background:#c0392b; }
 
+  .card-copy{
+    position:absolute;
+    top:4px; right:22px;
+    width:16px; height:16px;
+    border-radius:50%;
+    background:rgba(16,25,43,0.55);
+    color:#fff;
+    border:none;
+    cursor:pointer;
+    z-index:3;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+  }
+  .card:hover .card-copy{ display:flex; }
+  .card-copy:hover{ background: var(--gold); }
+  .card-copy svg{ width:9px; height:9px; }
+  .card-copy.copied{ background:#2e9e5b; display:flex; }
+
+  .copy-toast{
+    position:fixed;
+    left:50%;
+    bottom:24px;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--navy-deep);
+    color:#fff;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size:0.8rem;
+    box-shadow: 0 6px 18px rgba(11,30,58,0.35);
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .18s ease, transform .18s ease;
+    z-index: 999;
+  }
+  .copy-toast.show{
+    opacity:1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   .card-title{
     padding: 6px 8px;
     font-weight:700;
@@ -301,6 +357,8 @@
   <p class="empty" id="emptyMsg" style="display:none;">Nenhum link cadastrado ainda. Adicione um acima.</p>
 </main>
 
+<div class="copy-toast" id="copyToast">Link copiado!</div>
+
 <script>
   // ============================================================
   // 1) COLE AQUI a configuração do SEU projeto Firebase.
@@ -365,6 +423,12 @@
 
       card.innerHTML = `
         <button class="card-delete" title="Remover card" onclick="deleteCard(event, '${link.key}')">✕</button>
+        <button class="card-copy" title="Copiar link" onclick="copyLink(event, '${link.url.replace(/'/g, "\\'")}', this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="12" height="12" rx="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
         <button class="card-toggle" title="${link.noPreview ? 'Tentar mostrar prévia real' : 'Marcar como link interno (sem prévia)'}" onclick="togglePreview(event, '${link.key}', ${!!link.noPreview})">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             ${link.noPreview
@@ -469,6 +533,45 @@
     noPreviewInput.checked = false;
   }
 
+  function copyLink(event, url, btn){
+    event.preventDefault();
+    event.stopPropagation();
+
+    const showFeedback = () => {
+      const toast = document.getElementById('copyToast');
+      toast.classList.add('show');
+      clearTimeout(showFeedback._t);
+      showFeedback._t = setTimeout(() => toast.classList.remove('show'), 1600);
+
+      if(btn){
+        const original = btn.innerHTML;
+        btn.classList.add('copied');
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = original;
+        }, 1200);
+      }
+    };
+
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(showFeedback).catch(() => fallbackCopy(url, showFeedback));
+    } else {
+      fallbackCopy(url, showFeedback);
+    }
+  }
+
+  function fallbackCopy(url, cb){
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); cb(); } catch(e) { console.error(e); }
+    document.body.removeChild(ta);
+  }
+
   function togglePreview(event, key, current){
     event.preventDefault();
     event.stopPropagation();
@@ -501,6 +604,13 @@
       seedLinks.forEach(link => linksRef.push(link));
     }
   });
+
+  // Registra o service worker para habilitar o comportamento de app instalável (PWA).
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.error('Erro ao registrar SW:', err));
+    });
+  }
 </script>
 
 </body>
