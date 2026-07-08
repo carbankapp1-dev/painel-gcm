@@ -177,6 +177,77 @@
     width:100%;
   }
 
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background: rgba(11,30,58,0.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-box{
+    background:#fff;
+    border-radius: 12px;
+    max-width: 360px;
+    width:100%;
+    padding: 22px 22px 20px;
+    box-shadow: 0 12px 40px rgba(11,30,58,0.35);
+  }
+  .modal-box h2{
+    font-size: 1.05rem;
+    color: var(--ink);
+    margin-bottom:8px;
+  }
+  .modal-box p{
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height:1.4;
+    margin-bottom: 14px;
+  }
+  .modal-box p strong{ color: var(--ink); }
+  .modal-box input{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding: 9px 11px;
+    font-size:0.85rem;
+    margin-bottom: 6px;
+  }
+  .modal-box input:focus{ outline:2px solid var(--gold); border-color:transparent; }
+  .modal-error{
+    color:#c0392b;
+    font-size:0.72rem;
+    min-height: 1em;
+    margin-bottom: 10px;
+  }
+  .modal-actions{
+    display:flex;
+    gap:8px;
+    justify-content:flex-end;
+  }
+  .modal-actions button{
+    border-radius:7px;
+    padding: 8px 16px;
+    font-size:0.82rem;
+    font-weight:600;
+    cursor:pointer;
+    border:none;
+  }
+  .modal-cancel{
+    background: var(--paper);
+    color: var(--ink);
+    border:1px solid var(--line) !important;
+  }
+  .modal-cancel:hover{ background:#e4e8ee; }
+  .modal-confirm{
+    background:#c0392b;
+    color:#fff;
+  }
+  .modal-confirm:hover{ background:#a5311f; }
+
   main{
     max-width: 1400px;
     margin: 18px auto 60px;
@@ -446,6 +517,19 @@
 
 <div class="copy-toast" id="copyToast">Link copiado!</div>
 
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <h2>Excluir card</h2>
+    <p>Tem certeza que deseja excluir <strong id="deleteCardName">este card</strong>? Essa ação não pode ser desfeita.</p>
+    <input id="deletePassword" type="password" placeholder="Senha de acesso" autocomplete="off">
+    <div class="modal-error" id="deleteError"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="modal-confirm" onclick="confirmDelete()">Excluir</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // ============================================================
   // 1) COLE AQUI a configuração do SEU projeto Firebase.
@@ -509,7 +593,7 @@
       try { hostname = new URL(link.url).hostname; } catch(e) { hostname = link.url; }
 
       card.innerHTML = `
-        <button class="card-delete" title="Remover card" onclick="deleteCard(event, '${link.key}')">✕</button>
+        <button class="card-delete" title="Remover card" onclick="deleteCard(event, '${link.key}', '${link.title.replace(/'/g, "\\'")}')">✕</button>
         <button class="card-toggle" title="${link.noPreview ? 'Tentar mostrar prévia real' : 'Marcar como link interno (sem prévia)'}" onclick="togglePreview(event, '${link.key}', ${!!link.noPreview})">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             ${link.noPreview
@@ -729,13 +813,49 @@
     linksRef.child(key).update({ noPreview: !current });
   }
 
-  function deleteCard(event, key){
+  let pendingDeleteKey = null;
+
+  function deleteCard(event, key, title){
     event.preventDefault();
     event.stopPropagation();
-    if(confirm('Remover este card do painel?')){
-      linksRef.child(key).remove();
-    }
+    pendingDeleteKey = key;
+    document.getElementById('deleteCardName').textContent = title || 'este card';
+    document.getElementById('deletePassword').value = '';
+    document.getElementById('deleteError').textContent = '';
+    const modal = document.getElementById('deleteModal');
+    modal.classList.add('show');
+    setTimeout(() => document.getElementById('deletePassword').focus(), 100);
   }
+
+  function closeDeleteModal(){
+    document.getElementById('deleteModal').classList.remove('show');
+    pendingDeleteKey = null;
+  }
+
+  function confirmDelete(){
+    const pwInput = document.getElementById('deletePassword');
+    const errorEl = document.getElementById('deleteError');
+
+    if(pwInput.value !== ADD_PASSWORD){
+      errorEl.textContent = 'Senha incorreta.';
+      pwInput.value = '';
+      pwInput.focus();
+      return;
+    }
+
+    if(pendingDeleteKey){
+      linksRef.child(pendingDeleteKey).remove();
+    }
+    closeDeleteModal();
+  }
+
+  document.getElementById('deleteModal').addEventListener('click', (e) => {
+    if(e.target.id === 'deleteModal') closeDeleteModal();
+  });
+  document.getElementById('deletePassword').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') confirmDelete();
+    if(e.key === 'Escape') closeDeleteModal();
+  });
 
   // Escuta o banco em tempo real: qualquer alteração (deste ou de outro computador)
   // atualiza a tela na hora.
