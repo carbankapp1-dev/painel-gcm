@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Painel de Sistemas</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --navy-deep: #0b1e3a;
+    --navy: #12294d;
+    --navy-light: #1c3a63;
+    --gold: #d4a53d;
+    --paper: #eef1f6;
+    --ink: #10192b;
+    --muted: #6b7688;
+    --line: #d9dee6;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height:100vh;
+  }
+
+  header{
+    background: linear-gradient(135deg, var(--navy-deep), var(--navy));
+    padding: 16px 24px;
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+    flex-wrap:wrap;
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    bottom:-2px; left:0; right:0;
+    height:4px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  header h1{
+    color:#fff;
+    font-size: 1.5rem;
+    letter-spacing: 0.3px;
+    font-weight: 700;
+    white-space:nowrap;
+  }
+  #statusMsg{
+    color:#b7c4dc;
+    font-size:0.7rem;
+    margin-left:10px;
+    font-weight:400;
+  }
+
+  .add-bar{
+    display:flex;
+    gap:8px;
+    flex-wrap: wrap;
+    align-items:center;
+  }
+  .add-bar input{
+    width: 180px;
+    border:1px solid transparent;
+    border-radius:7px;
+    padding: 7px 10px;
+    font-size:0.8rem;
+    background: rgba(255,255,255,0.95);
+  }
+  .add-bar label{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    color:#dfe6f2;
+    font-size:0.72rem;
+    white-space:nowrap;
+    cursor:pointer;
+  }
+  .add-bar input[type="checkbox"]{
+    width:14px;
+    height:14px;
+    cursor:pointer;
+  }
+  .add-bar input[type="text"]:focus{ outline:2px solid var(--gold); border-color:transparent;}
+  .add-bar button{
+    background: transparent;
+    color:#fff;
+    border:1.5px solid #fff;
+    border-radius:7px;
+    padding: 7px 14px;
+    font-weight:600;
+    font-size:0.8rem;
+    cursor:pointer;
+    white-space:nowrap;
+    transition: background .15s ease, color .15s ease;
+  }
+  .add-bar button:hover{ background:#fff; color: var(--navy); }
+
+  main{
+    max-width: 1400px;
+    margin: 18px auto 60px;
+    padding: 0 20px;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
+  }
+
+  .card{
+    background:#fff;
+    border-radius: 8px;
+    overflow:hidden;
+    box-shadow: 0 2px 8px rgba(11,30,58,0.10);
+    display:flex;
+    flex-direction:column;
+    text-decoration:none;
+    color:inherit;
+    transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+    position:relative;
+    cursor:default;
+  }
+  .card:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(11,30,58,0.18);
+  }
+  .card.dragging{
+    opacity: 0.4;
+  }
+  .card.drag-over{
+    outline: 2px dashed var(--gold);
+    outline-offset: -2px;
+  }
+  .grip{
+    cursor:grab;
+    color: var(--muted);
+    font-size:0.6rem;
+    letter-spacing:1px;
+    flex-shrink:0;
+  }
+  .card-delete{
+    position:absolute;
+    top:4px; right:4px;
+    width:16px; height:16px;
+    border-radius:50%;
+    background:rgba(16,25,43,0.55);
+    color:#fff;
+    border:none;
+    font-size:0.6rem;
+    line-height:16px;
+    text-align:center;
+    cursor:pointer;
+    z-index:3;
+    display:none;
+  }
+  .card:hover .card-delete{ display:block; }
+  .card-delete:hover{ background:#c0392b; }
+
+  .card-title{
+    padding: 6px 8px;
+    font-weight:700;
+    font-size:0.66rem;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:5px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .card-title span.title-text{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    flex:1;
+  }
+  .card-title .dot{
+    width:5px; height:5px; border-radius:50%;
+    background: var(--gold);
+    flex-shrink:0;
+  }
+
+  .browser-frame{
+    background: #dfe4ec;
+    padding: 3px 5px;
+    display:flex;
+    align-items:center;
+    gap:3px;
+  }
+  .browser-frame span{
+    width:5px; height:5px; border-radius:50%;
+  }
+  .b-red{background:#ef5f57;}
+  .b-yellow{background:#f6bf4f;}
+  .b-green{background:#61c454;}
+
+  .thumb-wrap{
+    position:relative;
+    width:100%;
+    aspect-ratio: 16 / 10;
+    background: var(--navy-deep) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="none"/></svg>');
+    overflow:hidden;
+  }
+  .thumb-wrap img{
+    width:100%;
+    height:100%;
+    object-fit: cover;
+    object-position: top;
+    display:block;
+  }
+  .thumb-wrap .loading{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:#9fb0cc;
+    font-size:0.6rem;
+    text-align:center;
+    padding:0 6px;
+  }
+
+  .thumb-placeholder{
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color: #4a6491;
+  }
+  .thumb-placeholder svg{
+    width:38%;
+    height:38%;
+  }
+
+  .card-toggle{
+    position:absolute;
+    top:4px; left:4px;
+    width:16px; height:16px;
+    border-radius:50%;
+    background:rgba(16,25,43,0.55);
+    color:#fff;
+    border:none;
+    cursor:pointer;
+    z-index:3;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+  }
+  .card:hover .card-toggle{ display:flex; }
+  .card-toggle:hover{ background: var(--gold); }
+  .card-toggle svg{ width:9px; height:9px; }
+
+  .card-footer{
+    padding: 5px 8px 8px;
+    font-size:0.6rem;
+    color: var(--muted);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .empty{
+    text-align:center;
+    color: var(--muted);
+    padding: 40px 20px;
+  }
+
+  @media (max-width: 1024px){
+    .grid{ grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 640px){
+    .grid{ grid-template-columns: repeat(2, 1fr); gap:10px; }
+    header{ flex-direction:column; align-items:stretch; padding: 14px 16px; }
+    header h1{ font-size: 1.3rem; text-align:center; }
+    .add-bar{ justify-content:center; }
+    .add-bar input{ width: 100%; flex:1; min-width:120px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Painel de Sistemas<span id="statusMsg"></span></h1>
+  <div class="add-bar">
+    <input id="newTitle" type="text" placeholder="Nome do sistema (ex: Portal Gravames)">
+    <input id="newUrl" type="text" placeholder="https://link-do-sistema.com">
+    <label><input id="newNoPreview" type="checkbox"> Link interno (sem prévia)</label>
+    <button onclick="addCard()">Adicionar card</button>
+  </div>
+</header>
+
+<main>
+  <div class="grid" id="grid"></div>
+  <p class="empty" id="emptyMsg" style="display:none;">Nenhum link cadastrado ainda. Adicione um acima.</p>
+</main>
+
+<script>
+  // ============================================================
+  // 1) COLE AQUI a configuração do SEU projeto Firebase.
+  //    Veja o passo a passo enviado no chat pra pegar esses valores.
+  // ============================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyAxPlVgXzjaD5xRQwXRua9vxR5EhCNEvIc",
+    authDomain: "painel-gcm.firebaseapp.com",
+    databaseURL: "https://painel-gcm-default-rtdb.firebaseio.com",
+    projectId: "painel-gcm",
+    storageBucket: "painel-gcm.firebasestorage.app",
+    messagingSenderId: "942259828918",
+    appId: "1:942259828918:web:0a957c893a5e22a8f94e17"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const linksRef = db.ref('links');
+
+  // Links usados apenas para popular o banco na primeira vez que ele estiver vazio.
+  const seedLinks = [
+    { title: "NetCarros", url: "https://carbankapp1-dev.github.io/netcarros/", order: 0 },
+    { title: "Propostas", url: "https://demandassp1-vw.github.io/propostas/", order: 1 },
+    { title: "Taxa Especial", url: "https://demandassp1-vw.github.io/taxa_especial/", order: 2 },
+    { title: "Baixa Temporária - Ofício", url: "https://demandassp1-vw.github.io/baixa-temporaria-oficio/", order: 3 }
+  ];
+
+  let links = []; // { key, title, url, order }
+  let draggedKey = null;
+  const statusMsg = document.getElementById('statusMsg');
+
+  function screenshotUrl(targetUrl){
+    // Serviço gratuito de screenshot automático: recebe a URL do site
+    // e devolve uma imagem da tela renderizada, sem precisar acessar manualmente.
+    return `https://image.thum.io/get/width/900/crop/560/noanimate/${targetUrl}`;
+  }
+
+  function render(){
+    const grid = document.getElementById('grid');
+    const emptyMsg = document.getElementById('emptyMsg');
+    grid.innerHTML = '';
+
+    if(links.length === 0){
+      emptyMsg.style.display = 'block';
+      return;
+    }
+    emptyMsg.style.display = 'none';
+
+    const sorted = [...links].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    sorted.forEach(link => {
+      const card = document.createElement('a');
+      card.className = 'card';
+      card.href = link.url;
+      card.target = '_blank';
+      card.rel = 'noopener noreferrer';
+      card.draggable = true;
+      card.dataset.key = link.key;
+
+      let hostname = '';
+      try { hostname = new URL(link.url).hostname; } catch(e) { hostname = link.url; }
+
+      card.innerHTML = `
+        <button class="card-delete" title="Remover card" onclick="deleteCard(event, '${link.key}')">✕</button>
+        <button class="card-toggle" title="${link.noPreview ? 'Tentar mostrar prévia real' : 'Marcar como link interno (sem prévia)'}" onclick="togglePreview(event, '${link.key}', ${!!link.noPreview})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            ${link.noPreview
+              ? '<path d="M1 1l22 22"></path><path d="M9.9 4.2A10 10 0 0 1 22 12a10.4 10.4 0 0 1-1.3 2.6M6.5 6.5A10.4 10.4 0 0 0 2 12a10 10 0 0 0 16.6 3.1"></path>'
+              : '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle>'}
+          </svg>
+        </button>
+        <div class="card-title">
+          <span class="grip">⋮⋮</span>
+          <span class="title-text">${link.title}</span>
+          <span class="dot"></span>
+        </div>
+        <div class="browser-frame">
+          <span class="b-red"></span><span class="b-yellow"></span><span class="b-green"></span>
+        </div>
+        <div class="thumb-wrap">
+          ${link.noPreview ? `
+            <div class="thumb-placeholder">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="6" y="10" width="52" height="44" rx="4"></rect>
+                <line x1="6" y1="22" x2="58" y2="22"></line>
+                <circle cx="13" cy="16" r="1.3" fill="currentColor" stroke="none"></circle>
+                <circle cx="19" cy="16" r="1.3" fill="currentColor" stroke="none"></circle>
+                <circle cx="25" cy="16" r="1.3" fill="currentColor" stroke="none"></circle>
+              </svg>
+            </div>
+          ` : `
+            <div class="loading">Carregando prévia...</div>
+            <img loading="lazy" src="${screenshotUrl(link.url)}" alt="Prévia de ${link.title}"
+                 onload="this.previousElementSibling.style.display='none'"
+                 onerror="this.previousElementSibling.textContent='Prévia indisponível'">
+          `}
+        </div>
+        <div class="card-footer">${hostname}</div>
+      `;
+
+      card.addEventListener('dragstart', () => {
+        draggedKey = link.key;
+        card.classList.add('dragging');
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+      });
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if(link.key !== draggedKey) card.classList.add('drag-over');
+      });
+      card.addEventListener('dragleave', () => {
+        card.classList.remove('drag-over');
+      });
+      card.addEventListener('drop', (e) => {
+        e.preventDefault();
+        card.classList.remove('drag-over');
+        reorderCards(draggedKey, link.key);
+      });
+
+      grid.appendChild(card);
+    });
+  }
+
+  function reorderCards(fromKey, toKey){
+    if(!fromKey || fromKey === toKey) return;
+
+    const sorted = [...links].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const fromIndex = sorted.findIndex(l => l.key === fromKey);
+    const toIndex = sorted.findIndex(l => l.key === toKey);
+    if(fromIndex === -1 || toIndex === -1) return;
+
+    const [moved] = sorted.splice(fromIndex, 1);
+    sorted.splice(toIndex, 0, moved);
+
+    // Reatribui a ordem sequencial e grava no Firebase de uma vez só.
+    const updates = {};
+    sorted.forEach((l, i) => {
+      l.order = i;
+      updates[`links/${l.key}/order`] = i;
+    });
+    links = sorted;
+    render();
+    db.ref().update(updates);
+  }
+
+  function addCard(){
+    const titleInput = document.getElementById('newTitle');
+    const urlInput = document.getElementById('newUrl');
+    const noPreviewInput = document.getElementById('newNoPreview');
+    const title = titleInput.value.trim();
+    let url = urlInput.value.trim();
+
+    if(!title || !url){
+      alert('Preencha o nome e o link do sistema.');
+      return;
+    }
+    if(!/^https?:\/\//i.test(url)){
+      url = 'https://' + url;
+    }
+
+    const maxOrder = links.reduce((max, l) => Math.max(max, l.order ?? 0), -1);
+    linksRef.push({ title, url, order: maxOrder + 1, noPreview: noPreviewInput.checked });
+    titleInput.value = '';
+    urlInput.value = '';
+    noPreviewInput.checked = false;
+  }
+
+  function togglePreview(event, key, current){
+    event.preventDefault();
+    event.stopPropagation();
+    linksRef.child(key).update({ noPreview: !current });
+  }
+
+  function deleteCard(event, key){
+    event.preventDefault();
+    event.stopPropagation();
+    if(confirm('Remover este card do painel?')){
+      linksRef.child(key).remove();
+    }
+  }
+
+  // Escuta o banco em tempo real: qualquer alteração (deste ou de outro computador)
+  // atualiza a tela na hora.
+  linksRef.on('value', snapshot => {
+    const data = snapshot.val() || {};
+    links = Object.entries(data).map(([key, val]) => ({ key, ...val }));
+    render();
+    statusMsg.textContent = '· conectado';
+  }, error => {
+    statusMsg.textContent = '· erro de conexão com o banco';
+    console.error(error);
+  });
+
+  // Na primeira vez que o banco estiver vazio, popula com os links iniciais.
+  linksRef.once('value').then(snapshot => {
+    if(!snapshot.exists()){
+      seedLinks.forEach(link => linksRef.push(link));
+    }
+  });
+</script>
+
+</body>
+</html>
