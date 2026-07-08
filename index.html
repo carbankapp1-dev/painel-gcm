@@ -117,6 +117,66 @@
   }
   .add-bar button:hover{ background:#fff; color: var(--navy); }
 
+  .add-toggle-btn{
+    background: rgba(255,255,255,0.08);
+    color:#fff;
+    border:1.5px solid rgba(255,255,255,0.5);
+    border-radius:7px;
+    padding: 7px 14px;
+    font-weight:600;
+    font-size:0.8rem;
+    cursor:pointer;
+    white-space:nowrap;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .add-toggle-btn:hover{ background: rgba(255,255,255,0.16); border-color:#fff; }
+  .add-toggle-btn svg{ width:13px; height:13px; flex-shrink:0; }
+
+  .add-panel{
+    width:100%;
+    overflow:hidden;
+    max-height:0;
+    transition: max-height .25s ease;
+  }
+  .add-panel.open{ max-height:200px; }
+
+  .add-password-row{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+    padding-top:12px;
+  }
+  .add-password-row input{
+    width:160px;
+    border:1px solid transparent;
+    border-radius:7px;
+    padding:7px 10px;
+    font-size:0.8rem;
+    background: rgba(255,255,255,0.95);
+  }
+  .add-password-row input:focus{ outline:2px solid var(--gold); border-color:transparent; }
+  .add-password-row button{
+    background: var(--gold);
+    color: var(--navy-deep);
+    border:none;
+    border-radius:7px;
+    padding: 7px 14px;
+    font-weight:700;
+    font-size:0.8rem;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .add-password-row button:hover{ filter:brightness(1.08); }
+  .password-error{
+    color:#ff9b9b;
+    font-size:0.7rem;
+    width:100%;
+  }
+
   main{
     max-width: 1400px;
     margin: 18px auto 60px;
@@ -344,6 +404,9 @@
     header h1{ font-size: 1.3rem; text-align:center; }
     .add-bar{ justify-content:center; }
     .add-bar input{ width: 100%; flex:1; min-width:120px; }
+    .add-panel.open{ max-height:260px; }
+    .add-password-row input{ width:100%; flex:1; }
+    .add-toggle-btn{ width:100%; justify-content:center; }
   }
 </style>
 </head>
@@ -351,11 +414,28 @@
 
 <header>
   <h1>Painel de Sistemas<span id="statusMsg"></span></h1>
-  <div class="add-bar">
-    <input id="newTitle" type="text" placeholder="Nome do sistema (ex: Portal Gravames)">
-    <input id="newUrl" type="text" placeholder="https://link-do-sistema.com">
-    <label><input id="newNoPreview" type="checkbox"> Link interno (sem prévia)</label>
-    <button onclick="addCard()">Adicionar card</button>
+
+  <button class="add-toggle-btn" id="addToggleBtn" onclick="toggleAddPanel()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+    </svg>
+    <span id="addToggleLabel">Adicionar sistema</span>
+  </button>
+
+  <div class="add-panel" id="addPanel">
+    <div class="add-password-row" id="addPasswordRow">
+      <input id="addPassword" type="password" placeholder="Senha de acesso" autocomplete="off">
+      <button onclick="checkPassword()">Entrar</button>
+      <span class="password-error" id="passwordError"></span>
+    </div>
+
+    <div class="add-bar" id="addBar" style="display:none;">
+      <input id="newTitle" type="text" placeholder="Nome do sistema (ex: Portal Gravames)">
+      <input id="newUrl" type="text" placeholder="https://link-do-sistema.com">
+      <label><input id="newNoPreview" type="checkbox"> Link interno (sem prévia)</label>
+      <button onclick="addCard()">Adicionar card</button>
+    </div>
   </div>
 </header>
 
@@ -519,6 +599,68 @@
     render();
     db.ref().update(updates);
   }
+
+  // ============================================================
+  // Painel de "Adicionar sistema" protegido por senha.
+  // AVISO: como é uma página estática, essa senha fica no código-fonte
+  // (visível a quem inspecionar o HTML). Serve como barreira de uso para
+  // o time, não como segurança contra alguém tecnicamente decidido.
+  // ============================================================
+  const ADD_PASSWORD = "@asdf";
+  let addUnlocked = sessionStorage.getItem('painelAddUnlocked') === 'true';
+
+  function toggleAddPanel(){
+    const panel = document.getElementById('addPanel');
+    const isOpen = panel.classList.contains('open');
+
+    if(isOpen){
+      panel.classList.remove('open');
+      return;
+    }
+
+    panel.classList.add('open');
+    if(addUnlocked){
+      showAddBar();
+    } else {
+      document.getElementById('addPasswordRow').style.display = 'flex';
+      document.getElementById('addBar').style.display = 'none';
+      const pwInput = document.getElementById('addPassword');
+      pwInput.value = '';
+      document.getElementById('passwordError').textContent = '';
+      setTimeout(() => pwInput.focus(), 150);
+    }
+  }
+
+  function showAddBar(){
+    document.getElementById('addPasswordRow').style.display = 'none';
+    document.getElementById('addBar').style.display = 'flex';
+    document.getElementById('addToggleLabel').textContent = 'Adicionar sistema';
+  }
+
+  function checkPassword(){
+    const pwInput = document.getElementById('addPassword');
+    const errorEl = document.getElementById('passwordError');
+
+    if(pwInput.value === ADD_PASSWORD){
+      addUnlocked = true;
+      sessionStorage.setItem('painelAddUnlocked', 'true');
+      errorEl.textContent = '';
+      showAddBar();
+    } else {
+      errorEl.textContent = 'Senha incorreta.';
+      pwInput.value = '';
+      pwInput.focus();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const pwInput = document.getElementById('addPassword');
+    if(pwInput){
+      pwInput.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter') checkPassword();
+      });
+    }
+  });
 
   function addCard(){
     const titleInput = document.getElementById('newTitle');
