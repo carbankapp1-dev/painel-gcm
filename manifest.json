@@ -2,7 +2,7 @@
   "name": "Painel de Sistemas",
   "short_name": "Painel",
   "description": "Painel de acesso rápido aos sistemas internos",
-  "start_url": "./painel-links.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
