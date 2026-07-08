@@ -2,9 +2,10 @@
 // Estratégia: network-first para o HTML (sempre tenta buscar a versão mais nova
 // e os dados do Firebase em tempo real), com fallback para cache quando offline.
 
-const CACHE_NAME = 'painel-sistemas-v1';
+const CACHE_NAME = 'painel-sistemas-v2';
 const APP_SHELL = [
-  './painel-links.html',
+  './',
+  './index.html',
   './manifest.json',
   './favicon-16x16.png',
   './favicon-32x32.png',
