@@ -663,19 +663,22 @@
     return `https://s0.wp.com/mshots/v1/${encodeURIComponent(targetUrl)}?w=900&h=560`;
   }
 
-  // Cadeia de fallback: 1) thum.io  2) mshots  3) print manual enviado
-  // pelo usuário (pasta /prints do repositório)  4) texto "indisponível".
+  // Cadeia de fallback:
+  // Se houver print manual: manual -> thum.io -> mshots -> texto "indisponível".
+  // Se não houver: thum.io -> mshots -> texto "indisponível".
   function handleScreenshotError(img, targetUrl, fallbackPreview){
     const stage = Number(img.dataset.stage || '0');
 
-    if(stage === 0){
-      img.dataset.stage = '1';
-      img.src = fallbackScreenshotUrl(targetUrl);
+    if(stage === 0 && fallbackPreview){
+      // A fonte principal era o print manual e falhou (arquivo não existe
+      // ou nome digitado errado) -> tenta o thum.io.
+      img.dataset.stage = '2';
+      img.src = screenshotUrl(targetUrl);
       return;
     }
-    if(stage === 1 && fallbackPreview){
-      img.dataset.stage = '2';
-      img.src = fallbackPreview;
+    if(stage === 0 || stage === 2){
+      img.dataset.stage = '3';
+      img.src = fallbackScreenshotUrl(targetUrl);
       return;
     }
     img.previousElementSibling.textContent = 'Prévia indisponível';
@@ -756,7 +759,9 @@
             </div>
           ` : `
             <div class="loading">Carregando prévia...</div>
-            <img loading="lazy" src="${screenshotUrl(link.url)}" alt="Prévia de ${link.title}"
+            <img loading="lazy"
+                 src="${link.fallbackPreview ? link.fallbackPreview : screenshotUrl(link.url)}"
+                 alt="Prévia de ${link.title}"
                  onload="this.previousElementSibling.style.display='none'"
                  onerror="handleScreenshotError(this, '${link.url.replace(/'/g, "\\'")}', ${link.fallbackPreview ? `'${link.fallbackPreview.replace(/'/g, "\\'")}'` : 'null'})">
           `}
