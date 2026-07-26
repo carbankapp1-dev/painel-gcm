@@ -121,19 +121,68 @@
     background: rgba(255,255,255,0.08);
     color:#fff;
     border:1.5px solid rgba(255,255,255,0.5);
-    border-radius:7px;
-    padding: 7px 14px;
+    border-radius:50%;
+    width:38px;
+    height:38px;
+    padding:0;
     font-weight:600;
     font-size:0.8rem;
     cursor:pointer;
     white-space:nowrap;
     display:flex;
     align-items:center;
-    gap:7px;
+    justify-content:center;
+    flex-shrink:0;
     transition: background .15s ease, border-color .15s ease;
   }
   .add-toggle-btn:hover{ background: rgba(255,255,255,0.16); border-color:#fff; }
-  .add-toggle-btn svg{ width:13px; height:13px; flex-shrink:0; }
+  .add-toggle-btn svg{ width:17px; height:17px; flex-shrink:0; transition: transform .2s ease; }
+  .add-toggle-btn.open svg{ transform: rotate(45deg); }
+
+  .search-wrap{
+    position:relative;
+    flex:1 1 260px;
+    max-width:360px;
+  }
+  .search-wrap svg{
+    position:absolute;
+    left:11px;
+    top:50%;
+    transform:translateY(-50%);
+    width:15px;
+    height:15px;
+    color:#8fa0bd;
+    pointer-events:none;
+  }
+  .search-wrap input{
+    width:100%;
+    border:1px solid rgba(255,255,255,0.18);
+    border-radius:8px;
+    padding:9px 12px 9px 34px;
+    font-size:0.85rem;
+    background: rgba(255,255,255,0.08);
+    color:#fff;
+  }
+  .search-wrap input::placeholder{ color:#8fa0bd; }
+  .search-wrap input:focus{
+    outline:2px solid var(--gold);
+    border-color:transparent;
+    background: rgba(255,255,255,0.13);
+  }
+
+  .btn-voltar{
+    background: transparent;
+    color:#fff;
+    border:1.5px solid rgba(255,255,255,0.5);
+    border-radius:7px;
+    padding: 7px 14px;
+    font-weight:600;
+    font-size:0.8rem;
+    cursor:pointer;
+    white-space:nowrap;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .btn-voltar:hover{ background: rgba(255,255,255,0.16); border-color:#fff; }
 
   .add-panel{
     width:100%;
@@ -477,7 +526,7 @@
     .add-bar input{ width: 100%; flex:1; min-width:120px; }
     .add-panel.open{ max-height:260px; }
     .add-password-row input{ width:100%; flex:1; }
-    .add-toggle-btn{ width:100%; justify-content:center; }
+    .search-wrap{ order:3; max-width:none; flex-basis:100%; }
   }
 </style>
 </head>
@@ -486,18 +535,26 @@
 <header>
   <h1>Painel de Sistemas<span id="statusMsg"></span></h1>
 
-  <button class="add-toggle-btn" id="addToggleBtn" onclick="toggleAddPanel()">
+  <div class="search-wrap">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="11" width="18" height="10" rx="2"></rect>
-      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      <circle cx="11" cy="11" r="8"></circle>
+      <path d="m21 21-4.35-4.35"></path>
     </svg>
-    <span id="addToggleLabel">Adicionar sistema</span>
+    <input id="searchInput" type="text" placeholder="Buscar sistema..." oninput="filterLinks()">
+  </div>
+
+  <button class="add-toggle-btn" id="addToggleBtn" title="Adicionar sistema" onclick="toggleAddPanel()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
   </button>
 
   <div class="add-panel" id="addPanel">
     <div class="add-password-row" id="addPasswordRow">
       <input id="addPassword" type="password" placeholder="Senha de acesso" autocomplete="off">
       <button onclick="checkPassword()">Entrar</button>
+      <button class="btn-voltar" onclick="closeAddPanel()">Voltar</button>
       <span class="password-error" id="passwordError"></span>
     </div>
 
@@ -559,7 +616,13 @@
 
   let links = []; // { key, title, url, order }
   let draggedKey = null;
+  let searchTerm = '';
   const statusMsg = document.getElementById('statusMsg');
+
+  function filterLinks(){
+    searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+    render();
+  }
 
   function screenshotUrl(targetUrl){
     // Serviço gratuito de screenshot automático: recebe a URL do site
@@ -573,12 +636,25 @@
     grid.innerHTML = '';
 
     if(links.length === 0){
+      emptyMsg.textContent = 'Nenhum link cadastrado ainda. Adicione um acima.';
+      emptyMsg.style.display = 'block';
+      return;
+    }
+
+    const filteredLinks = searchTerm
+      ? links.filter(l =>
+          (l.title || '').toLowerCase().includes(searchTerm) ||
+          (l.url || '').toLowerCase().includes(searchTerm))
+      : links;
+
+    if(filteredLinks.length === 0){
+      emptyMsg.textContent = 'Nenhum sistema encontrado para essa busca.';
       emptyMsg.style.display = 'block';
       return;
     }
     emptyMsg.style.display = 'none';
 
-    const sorted = [...links].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const sorted = [...filteredLinks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
     sorted.forEach(link => {
       const card = document.createElement('a');
@@ -695,14 +771,17 @@
 
   function toggleAddPanel(){
     const panel = document.getElementById('addPanel');
+    const toggleBtn = document.getElementById('addToggleBtn');
     const isOpen = panel.classList.contains('open');
 
     if(isOpen){
       panel.classList.remove('open');
+      toggleBtn.classList.remove('open');
       return;
     }
 
     panel.classList.add('open');
+    toggleBtn.classList.add('open');
     if(addUnlocked){
       showAddBar();
     } else {
@@ -715,10 +794,14 @@
     }
   }
 
+  function closeAddPanel(){
+    document.getElementById('addPanel').classList.remove('open');
+    document.getElementById('addToggleBtn').classList.remove('open');
+  }
+
   function showAddBar(){
     document.getElementById('addPasswordRow').style.display = 'none';
     document.getElementById('addBar').style.display = 'flex';
-    document.getElementById('addToggleLabel').textContent = 'Adicionar sistema';
   }
 
   function checkPassword(){
