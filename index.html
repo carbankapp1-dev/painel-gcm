@@ -49,7 +49,7 @@
     overflow:hidden;
     display:flex;
     align-items:center;
-    justify-content:space-between;
+    justify-content:flex-start;
     gap:20px;
     flex-wrap:wrap;
   }
@@ -118,6 +118,7 @@
   .add-bar button:hover{ background:#fff; color: var(--navy); }
 
   .add-toggle-btn{
+    margin-left:auto;
     background: rgba(255,255,255,0.08);
     color:#fff;
     border:1.5px solid rgba(255,255,255,0.5);
@@ -168,6 +169,11 @@
     outline:2px solid var(--gold);
     border-color:transparent;
     background: rgba(255,255,255,0.13);
+  }
+
+  .pw-mask{
+    -webkit-text-security: disc;
+    text-security: disc;
   }
 
   .btn-voltar{
@@ -522,6 +528,7 @@
     .grid{ grid-template-columns: repeat(2, 1fr); gap:10px; }
     header{ flex-direction:column; align-items:stretch; padding: 14px 16px; }
     header h1{ font-size: 1.3rem; text-align:center; }
+    .add-toggle-btn{ margin-left:0; align-self:center; }
     .add-bar{ justify-content:center; }
     .add-bar input{ width: 100%; flex:1; min-width:120px; }
     .add-panel.open{ max-height:260px; }
@@ -552,7 +559,7 @@
 
   <div class="add-panel" id="addPanel">
     <div class="add-password-row" id="addPasswordRow">
-      <input id="addPassword" type="password" placeholder="Senha de acesso" autocomplete="off">
+      <input id="addPassword" class="pw-mask" type="text" placeholder="Senha de acesso" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       <button onclick="checkPassword()">Entrar</button>
       <button class="btn-voltar" onclick="closeAddPanel()">Voltar</button>
       <span class="password-error" id="passwordError"></span>
@@ -562,6 +569,7 @@
       <input id="newTitle" type="text" placeholder="Nome do sistema (ex: Portal Gravames)">
       <input id="newUrl" type="text" placeholder="https://link-do-sistema.com">
       <label><input id="newNoPreview" type="checkbox"> Link interno (sem prévia)</label>
+      <input id="newFallbackPreview" type="text" placeholder="Arquivo em /prints (opcional, ex: portal-gravames.png)">
       <button onclick="addCard()">Adicionar card</button>
     </div>
   </div>
@@ -578,7 +586,7 @@
   <div class="modal-box">
     <h2>Excluir card</h2>
     <p>Tem certeza que deseja excluir <strong id="deleteCardName">este card</strong>? Essa ação não pode ser desfeita.</p>
-    <input id="deletePassword" type="password" placeholder="Senha de acesso" autocomplete="off">
+    <input id="deletePassword" class="pw-mask" type="text" placeholder="Senha de acesso" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="modal-error" id="deleteError"></div>
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeDeleteModal()">Cancelar</button>
@@ -635,15 +643,22 @@
     return `https://s0.wp.com/mshots/v1/${encodeURIComponent(targetUrl)}?w=900&h=560`;
   }
 
-  // Se a imagem principal falhar ao carregar, tenta uma vez o serviço reserva
-  // antes de mostrar a mensagem de "prévia indisponível".
-  function handleScreenshotError(img, targetUrl){
-    if(img.dataset.fallbackTried){
-      img.previousElementSibling.textContent = 'Prévia indisponível';
+  // Cadeia de fallback: 1) thum.io  2) mshots  3) print manual enviado
+  // pelo usuário (pasta /prints do repositório)  4) texto "indisponível".
+  function handleScreenshotError(img, targetUrl, fallbackPreview){
+    const stage = Number(img.dataset.stage || '0');
+
+    if(stage === 0){
+      img.dataset.stage = '1';
+      img.src = fallbackScreenshotUrl(targetUrl);
       return;
     }
-    img.dataset.fallbackTried = '1';
-    img.src = fallbackScreenshotUrl(targetUrl);
+    if(stage === 1 && fallbackPreview){
+      img.dataset.stage = '2';
+      img.src = fallbackPreview;
+      return;
+    }
+    img.previousElementSibling.textContent = 'Prévia indisponível';
   }
 
   function render(){
@@ -716,7 +731,7 @@
             <div class="loading">Carregando prévia...</div>
             <img loading="lazy" src="${screenshotUrl(link.url)}" alt="Prévia de ${link.title}"
                  onload="this.previousElementSibling.style.display='none'"
-                 onerror="handleScreenshotError(this, '${link.url.replace(/'/g, "\\'")}')">
+                 onerror="handleScreenshotError(this, '${link.url.replace(/'/g, "\\'")}', ${link.fallbackPreview ? `'${link.fallbackPreview.replace(/'/g, "\\'")}'` : 'null'})">
           `}
         </div>
         <div class="card-footer">
@@ -849,8 +864,10 @@
     const titleInput = document.getElementById('newTitle');
     const urlInput = document.getElementById('newUrl');
     const noPreviewInput = document.getElementById('newNoPreview');
+    const fallbackInput = document.getElementById('newFallbackPreview');
     const title = titleInput.value.trim();
     let url = urlInput.value.trim();
+    let fallbackPreview = fallbackInput.value.trim();
 
     if(!title || !url){
       alert('Preencha o nome e o link do sistema.');
@@ -859,12 +876,18 @@
     if(!/^https?:\/\//i.test(url)){
       url = 'https://' + url;
     }
+    // Se a pessoa digitar só o nome do arquivo (ex: "portal.png"), completa
+    // com o caminho da pasta /prints do repositório automaticamente.
+    if(fallbackPreview && !/^(https?:\/\/|\/|prints\/)/i.test(fallbackPreview)){
+      fallbackPreview = 'prints/' + fallbackPreview;
+    }
 
     const maxOrder = links.reduce((max, l) => Math.max(max, l.order ?? 0), -1);
-    linksRef.push({ title, url, order: maxOrder + 1, noPreview: noPreviewInput.checked });
+    linksRef.push({ title, url, order: maxOrder + 1, noPreview: noPreviewInput.checked, fallbackPreview: fallbackPreview || null });
     titleInput.value = '';
     urlInput.value = '';
     noPreviewInput.checked = false;
+    fallbackInput.value = '';
   }
 
   function copyLink(event, url, btn){
