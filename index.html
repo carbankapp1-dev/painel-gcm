@@ -198,6 +198,20 @@
   }
   .add-panel.open{ max-height:200px; }
 
+  .add-hint{
+    width:100%;
+    color:#9fb0cc;
+    font-size:0.68rem;
+    padding-top:8px;
+    line-height:1.4;
+  }
+  .add-hint code{
+    background: rgba(255,255,255,0.12);
+    padding:1px 5px;
+    border-radius:4px;
+    font-size:0.66rem;
+  }
+
   .add-password-row{
     display:flex;
     gap:8px;
@@ -462,6 +476,27 @@
     height:38%;
   }
 
+  .thumb-noprint{
+    width:100%;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    color: var(--muted);
+  }
+  .thumb-noprint svg{
+    width:30%;
+    height:30%;
+    opacity:0.6;
+  }
+  .thumb-noprint span{
+    font-size:0.62rem;
+    text-align:center;
+    padding:0 8px;
+  }
+
   .card-toggle{
     position:absolute;
     top:4px; left:4px;
@@ -589,9 +624,10 @@
       <input id="newTitle" type="text" placeholder="Nome do sistema (ex: Portal Gravames)">
       <input id="newUrl" type="text" placeholder="https://link-do-sistema.com">
       <label><input id="newNoPreview" type="checkbox"> Link interno (sem prévia)</label>
-      <input id="newFallbackPreview" type="text" placeholder="Arquivo em /prints (opcional, ex: portal-gravames.png)">
+      <input id="newFallbackPreview" type="text" placeholder="Print em /prints (ex: portal-gravames.png)">
       <button onclick="addCard()">Adicionar card</button>
     </div>
+    <div class="add-hint" id="addHint" style="display:none;">Suba o print na pasta <code>prints</code> do repositório e digite o nome do arquivo aqui. Sem isso, o card fica marcado como "sem print definido".</div>
   </div>
 </header>
 
@@ -652,35 +688,10 @@
     render();
   }
 
-  function screenshotUrl(targetUrl){
-    // Serviço principal: thum.io (screenshot direto, sem tela de "carregando").
-    return `https://image.thum.io/get/width/900/crop/560/noanimate/${targetUrl}`;
-  }
-
-  function fallbackScreenshotUrl(targetUrl){
-    // Serviço reserva: mshots (WordPress.com), usado só se o thum.io falhar
-    // ou estourar a cota gratuita, para não depender de um único serviço.
-    return `https://s0.wp.com/mshots/v1/${encodeURIComponent(targetUrl)}?w=900&h=560`;
-  }
-
-  // Cadeia de fallback:
-  // Se houver print manual: manual -> thum.io -> mshots -> texto "indisponível".
-  // Se não houver: thum.io -> mshots -> texto "indisponível".
-  function handleScreenshotError(img, targetUrl, fallbackPreview){
-    const stage = Number(img.dataset.stage || '0');
-
-    if(stage === 0 && fallbackPreview){
-      // A fonte principal era o print manual e falhou (arquivo não existe
-      // ou nome digitado errado) -> tenta o thum.io.
-      img.dataset.stage = '2';
-      img.src = screenshotUrl(targetUrl);
-      return;
-    }
-    if(stage === 0 || stage === 2){
-      img.dataset.stage = '3';
-      img.src = fallbackScreenshotUrl(targetUrl);
-      return;
-    }
+  // Print manual (pasta /prints do repositório) é a única fonte de prévia.
+  // Se a imagem não carregar (nome errado ou arquivo ainda não enviado),
+  // mostra o texto de aviso em vez de tentar qualquer serviço externo.
+  function handleScreenshotError(img){
     img.previousElementSibling.textContent = 'Prévia indisponível';
   }
 
@@ -757,13 +768,20 @@
                 <circle cx="25" cy="16" r="1.3" fill="currentColor" stroke="none"></circle>
               </svg>
             </div>
-          ` : `
+          ` : link.fallbackPreview ? `
             <div class="loading">Carregando prévia...</div>
-            <img loading="lazy"
-                 src="${link.fallbackPreview ? link.fallbackPreview : screenshotUrl(link.url)}"
-                 alt="Prévia de ${link.title}"
+            <img loading="lazy" src="${link.fallbackPreview}" alt="Prévia de ${link.title}"
                  onload="this.previousElementSibling.style.display='none'"
-                 onerror="handleScreenshotError(this, '${link.url.replace(/'/g, "\\'")}', ${link.fallbackPreview ? `'${link.fallbackPreview.replace(/'/g, "\\'")}'` : 'null'})">
+                 onerror="handleScreenshotError(this)">
+          ` : `
+            <div class="thumb-noprint">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="6" y="10" width="52" height="44" rx="4"></rect>
+                <circle cx="22" cy="26" r="4"></circle>
+                <path d="M12 46l12-12 8 8 10-10 10 10"></path>
+              </svg>
+              <span>Sem print definido</span>
+            </div>
           `}
         </div>
         <div class="card-footer">
@@ -850,6 +868,7 @@
     } else {
       document.getElementById('addPasswordRow').style.display = 'flex';
       document.getElementById('addBar').style.display = 'none';
+      document.getElementById('addHint').style.display = 'none';
       const pwInput = document.getElementById('addPassword');
       pwInput.value = '';
       document.getElementById('passwordError').textContent = '';
@@ -865,6 +884,7 @@
   function showAddBar(){
     document.getElementById('addPasswordRow').style.display = 'none';
     document.getElementById('addBar').style.display = 'flex';
+    document.getElementById('addHint').style.display = 'block';
   }
 
   function checkPassword(){
