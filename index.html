@@ -625,9 +625,23 @@
   }
 
   function screenshotUrl(targetUrl){
-    // Serviço gratuito de screenshot automático: recebe a URL do site
-    // e devolve uma imagem da tela renderizada, sem precisar acessar manualmente.
-    return `https://image.thum.io/get/width/900/crop/560/noanimate/${targetUrl}`;
+    // Serviço gratuito de screenshot automático (mshots, da WordPress.com):
+    // recebe a URL do site e devolve uma imagem da tela renderizada,
+    // sem precisar acessar manualmente. Sem cota diária documentada.
+    return `https://s0.wp.com/mshots/v1/${encodeURIComponent(targetUrl)}?w=900&h=560`;
+  }
+
+  // Na primeira captura de uma URL nova, o mshots costuma devolver uma
+  // imagem de "carregando" por alguns segundos enquanto tira o print de
+  // verdade em segundo plano. Essa função recarrega a imagem uma vez,
+  // depois de um tempo, para tentar pegar já o print definitivo.
+  function retryScreenshot(img){
+    if(img.dataset.retried) return;
+    img.dataset.retried = '1';
+    setTimeout(() => {
+      const base = img.dataset.baseSrc || img.src;
+      img.src = base + (base.includes('?') ? '&' : '?') + 'r=' + Date.now();
+    }, 2500);
   }
 
   function render(){
@@ -698,8 +712,8 @@
             </div>
           ` : `
             <div class="loading">Carregando prévia...</div>
-            <img loading="lazy" src="${screenshotUrl(link.url)}" alt="Prévia de ${link.title}"
-                 onload="this.previousElementSibling.style.display='none'"
+            <img loading="lazy" data-base-src="${screenshotUrl(link.url)}" src="${screenshotUrl(link.url)}" alt="Prévia de ${link.title}"
+                 onload="this.previousElementSibling.style.display='none'; retryScreenshot(this)"
                  onerror="this.previousElementSibling.textContent='Prévia indisponível'">
           `}
         </div>
