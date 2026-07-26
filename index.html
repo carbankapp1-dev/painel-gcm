@@ -481,6 +481,26 @@
   .card-toggle:hover{ background: var(--gold); }
   .card-toggle svg{ width:9px; height:9px; }
 
+  .card-fallback-btn{
+    position:absolute;
+    top:4px; left:24px;
+    width:16px; height:16px;
+    border-radius:50%;
+    background:rgba(16,25,43,0.55);
+    color:#fff;
+    border:none;
+    cursor:pointer;
+    z-index:3;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+  }
+  .card:hover .card-fallback-btn{ display:flex; }
+  .card-fallback-btn:hover{ background: var(--gold); }
+  .card-fallback-btn.has-fallback{ background: rgba(46,158,91,0.75); }
+  .card-fallback-btn svg{ width:9px; height:9px; }
+
   .card-footer{
     padding: 5px 6px 6px 8px;
     display:flex;
@@ -708,6 +728,13 @@
               : '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle>'}
           </svg>
         </button>
+        <button class="card-fallback-btn ${link.fallbackPreview ? 'has-fallback' : ''}" title="${link.fallbackPreview ? 'Editar print de backup (/' + link.fallbackPreview + ')' : 'Definir print de backup manual'}" onclick="setFallbackPreview(event, '${link.key}', '${(link.fallbackPreview || '').replace(/'/g, "\\'")}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <path d="M21 15l-5-5L5 21"></path>
+          </svg>
+        </button>
         <div class="card-title">
           <span class="grip">⋮⋮</span>
           <span class="title-text">${link.title}</span>
@@ -933,6 +960,25 @@
     event.preventDefault();
     event.stopPropagation();
     linksRef.child(key).update({ noPreview: !current });
+  }
+
+  // Define ou edita o print de backup manual (arquivo dentro da pasta /prints
+  // do repositório) para um card já cadastrado.
+  function setFallbackPreview(event, key, current){
+    event.preventDefault();
+    event.stopPropagation();
+
+    const input = window.prompt(
+      'Nome do arquivo em /prints para este card (ex: portal-gravames.png).\nDeixe em branco para remover o print de backup.',
+      current || ''
+    );
+    if(input === null) return; // cancelou
+
+    let value = input.trim();
+    if(value && !/^(https?:\/\/|\/|prints\/)/i.test(value)){
+      value = 'prints/' + value;
+    }
+    linksRef.child(key).update({ fallbackPreview: value || null });
   }
 
   let pendingDeleteKey = null;
