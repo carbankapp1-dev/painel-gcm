@@ -141,16 +141,16 @@
 
   .search-wrap{
     position:relative;
-    flex:1 1 260px;
-    max-width:360px;
+    flex:0 0 auto;
+    width:200px;
   }
   .search-wrap svg{
     position:absolute;
-    left:11px;
+    left:9px;
     top:50%;
     transform:translateY(-50%);
-    width:15px;
-    height:15px;
+    width:13px;
+    height:13px;
     color:#8fa0bd;
     pointer-events:none;
   }
@@ -158,8 +158,8 @@
     width:100%;
     border:1px solid rgba(255,255,255,0.18);
     border-radius:8px;
-    padding:9px 12px 9px 34px;
-    font-size:0.85rem;
+    padding:7px 10px 7px 30px;
+    font-size:0.8rem;
     background: rgba(255,255,255,0.08);
     color:#fff;
   }
@@ -526,7 +526,7 @@
     .add-bar input{ width: 100%; flex:1; min-width:120px; }
     .add-panel.open{ max-height:260px; }
     .add-password-row input{ width:100%; flex:1; }
-    .search-wrap{ order:3; max-width:none; flex-basis:100%; }
+    .search-wrap{ order:3; width:100%; }
   }
 </style>
 </head>
@@ -540,7 +540,7 @@
       <circle cx="11" cy="11" r="8"></circle>
       <path d="m21 21-4.35-4.35"></path>
     </svg>
-    <input id="searchInput" type="text" placeholder="Buscar sistema..." oninput="filterLinks()">
+    <input id="searchInput" type="search" name="painel-search-nao-autofill" placeholder="Buscar sistema..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" oninput="filterLinks()">
   </div>
 
   <button class="add-toggle-btn" id="addToggleBtn" title="Adicionar sistema" onclick="toggleAddPanel()">
@@ -625,23 +625,25 @@
   }
 
   function screenshotUrl(targetUrl){
-    // Serviço gratuito de screenshot automático (mshots, da WordPress.com):
-    // recebe a URL do site e devolve uma imagem da tela renderizada,
-    // sem precisar acessar manualmente. Sem cota diária documentada.
+    // Serviço principal: thum.io (screenshot direto, sem tela de "carregando").
+    return `https://image.thum.io/get/width/900/crop/560/noanimate/${targetUrl}`;
+  }
+
+  function fallbackScreenshotUrl(targetUrl){
+    // Serviço reserva: mshots (WordPress.com), usado só se o thum.io falhar
+    // ou estourar a cota gratuita, para não depender de um único serviço.
     return `https://s0.wp.com/mshots/v1/${encodeURIComponent(targetUrl)}?w=900&h=560`;
   }
 
-  // Na primeira captura de uma URL nova, o mshots costuma devolver uma
-  // imagem de "carregando" por alguns segundos enquanto tira o print de
-  // verdade em segundo plano. Essa função recarrega a imagem uma vez,
-  // depois de um tempo, para tentar pegar já o print definitivo.
-  function retryScreenshot(img){
-    if(img.dataset.retried) return;
-    img.dataset.retried = '1';
-    setTimeout(() => {
-      const base = img.dataset.baseSrc || img.src;
-      img.src = base + (base.includes('?') ? '&' : '?') + 'r=' + Date.now();
-    }, 2500);
+  // Se a imagem principal falhar ao carregar, tenta uma vez o serviço reserva
+  // antes de mostrar a mensagem de "prévia indisponível".
+  function handleScreenshotError(img, targetUrl){
+    if(img.dataset.fallbackTried){
+      img.previousElementSibling.textContent = 'Prévia indisponível';
+      return;
+    }
+    img.dataset.fallbackTried = '1';
+    img.src = fallbackScreenshotUrl(targetUrl);
   }
 
   function render(){
@@ -712,9 +714,9 @@
             </div>
           ` : `
             <div class="loading">Carregando prévia...</div>
-            <img loading="lazy" data-base-src="${screenshotUrl(link.url)}" src="${screenshotUrl(link.url)}" alt="Prévia de ${link.title}"
-                 onload="this.previousElementSibling.style.display='none'; retryScreenshot(this)"
-                 onerror="this.previousElementSibling.textContent='Prévia indisponível'">
+            <img loading="lazy" src="${screenshotUrl(link.url)}" alt="Prévia de ${link.title}"
+                 onload="this.previousElementSibling.style.display='none'"
+                 onerror="handleScreenshotError(this, '${link.url.replace(/'/g, "\\'")}')">
           `}
         </div>
         <div class="card-footer">
