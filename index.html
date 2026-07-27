@@ -848,7 +848,6 @@
   // o time, não como segurança contra alguém tecnicamente decidido.
   // ============================================================
   const ADD_PASSWORD = "@asdf";
-  let addUnlocked = sessionStorage.getItem('painelAddUnlocked') === 'true';
 
   function toggleAddPanel(){
     const panel = document.getElementById('addPanel');
@@ -863,17 +862,13 @@
 
     panel.classList.add('open');
     toggleBtn.classList.add('open');
-    if(addUnlocked){
-      showAddBar();
-    } else {
-      document.getElementById('addPasswordRow').style.display = 'flex';
-      document.getElementById('addBar').style.display = 'none';
-      document.getElementById('addHint').style.display = 'none';
-      const pwInput = document.getElementById('addPassword');
-      pwInput.value = '';
-      document.getElementById('passwordError').textContent = '';
-      setTimeout(() => pwInput.focus(), 150);
-    }
+    document.getElementById('addPasswordRow').style.display = 'flex';
+    document.getElementById('addBar').style.display = 'none';
+    document.getElementById('addHint').style.display = 'none';
+    const pwInput = document.getElementById('addPassword');
+    pwInput.value = '';
+    document.getElementById('passwordError').textContent = '';
+    setTimeout(() => pwInput.focus(), 150);
   }
 
   function closeAddPanel(){
@@ -892,8 +887,6 @@
     const errorEl = document.getElementById('passwordError');
 
     if(pwInput.value === ADD_PASSWORD){
-      addUnlocked = true;
-      sessionStorage.setItem('painelAddUnlocked', 'true');
       errorEl.textContent = '';
       showAddBar();
     } else {
