@@ -536,6 +536,34 @@
   .card-copy svg{ width:11px; height:11px; }
   .card-copy.copied{ background:#2e9e5b; border-color:#2e9e5b; color:#fff; }
 
+  /* Contador de acessos (últimos 30 dias) no rodapé do card */
+  .card-stats{
+    display:flex;
+    align-items:center;
+    gap:3px;
+    font-size:0.6rem;
+    font-weight:600;
+    color: var(--muted);
+    white-space:nowrap;
+    flex-shrink:0;
+    cursor:help;
+  }
+  .card-stats svg{ width:11px; height:11px; }
+  .card-stats.zero{ font-weight:400; opacity:0.6; font-style:italic; }
+
+  .sort-select{
+    background: rgba(255,255,255,0.08);
+    color:#fff;
+    border:1.5px solid rgba(255,255,255,0.5);
+    border-radius:7px;
+    padding: 6px 8px;
+    font-size:0.78rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .sort-select option{ color: var(--ink); }
+  .sort-select:focus{ outline:2px solid var(--gold); }
+
   .empty{
     text-align:center;
     color: var(--muted);
@@ -722,6 +750,12 @@
       </svg>
     </button>
 
+    <select class="sort-select master-only" id="sortSelect" title="Ordem dos cards" onchange="changeSort()">
+      <option value="manual">Ordem manual</option>
+      <option value="least">Menos acessados</option>
+      <option value="most">Mais acessados</option>
+    </select>
+
     <div class="user-area">
       <span>Olá, <strong id="userName"></strong></span>
       <span class="role-badge" id="roleBadge" style="display:none;">master</span>
@@ -793,6 +827,9 @@
   const db = firebase.database();
   const linksRef = db.ref('links');
   const usersRef = db.ref('users');
+  // Estatísticas de acesso: stats/{chaveDoLink}/d/{AAAA-MM-DD} = { a: acessos, c: cópias, u: { usuario: true } }
+  //                         stats/{chaveDoLink}/last = data/hora do último acesso
+  const statsRef = db.ref('stats');
 
   // Links usados apenas para popular o banco na primeira vez que ele estiver vazio.
   const seedLinks = [
@@ -805,6 +842,8 @@
   let links = []; // { key, title, url, order, noPreview, fallbackPreview }
   let draggedKey = null;
   let searchTerm = '';
+  let stats = {};
+  let sortMode = 'manual'; // manual | least | most (só o master troca)
   const statusMsg = document.getElementById('statusMsg');
 
   // ============================================================
@@ -995,6 +1034,7 @@
     document.getElementById('userName').textContent = currentUser ? currentUser.name : '';
     document.getElementById('roleBadge').style.display = master ? 'inline-block' : 'none';
     render();
+    if(master && statsLoaded && linksLoaded) pruneOldStats();
   }
 
   loginName.addEventListener('input', () => {
@@ -1165,7 +1205,22 @@
     emptyMsg.style.display = 'none';
 
     const master = isMaster();
-    const sorted = [...filteredLinks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
+    let sorted;
+    if(master && sortMode !== 'manual'){
+      const dir = sortMode === 'least' ? 1 : -1;
+      sorted = filteredLinks
+        .map(l => ({ l, s: computeStats(l.key) }))
+        .sort((x, y) =>
+          dir * (x.s.accesses - y.s.accesses) ||
+          dir * ((x.s.last || 0) - (y.s.last || 0)) ||
+          byOrder(x.l, y.l))
+        .map(x => x.l);
+    } else {
+      sorted = [...filteredLinks].sort(byOrder);
+    }
+    // Arrastar para reordenar só faz sentido na ordem manual.
+    const canDrag = master && sortMode === 'manual';
 
     sorted.forEach(link => {
       const card = document.createElement('a');
@@ -1173,7 +1228,7 @@
       card.href = safeUrl(link.url);
       card.target = '_blank';
       card.rel = 'noopener noreferrer';
-      card.draggable = master;
+      card.draggable = canDrag;
       card.dataset.key = link.key;
 
       let hostname = '';
@@ -1236,6 +1291,7 @@
         </div>
         <div class="card-footer">
           <span class="hostname">${escapeHtml(hostname)}</span>
+          ${statsHtml(link.key)}
           <button class="card-copy" data-action="copy" title="Copiar link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="12" height="12" rx="2"></rect>
@@ -1245,7 +1301,7 @@
         </div>
       `;
 
-      if(master){
+      if(canDrag){
         card.addEventListener('dragstart', () => {
           draggedKey = link.key;
           card.classList.add('dragging');
@@ -1271,10 +1327,134 @@
     });
   }
 
-  // Um único listener para todos os botões dos cards.
+  // ============================================================
+  // Contador de acessos
+  // Conta cliques feitos pelo painel (não conta favoritos do navegador
+  // nem quem digita o endereço direto). Mostra os últimos 30 dias.
+  // ============================================================
+  const STATS_DAYS = 30;
+  const STATS_KEEP_DAYS = 120; // dias mais antigos que isso são apagados pelo master
+
+  function dayKey(date){
+    const d = new Date(date);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function registerAccess(linkKey, type){ // type: 'a' (acesso) | 'c' (cópia)
+    if(!currentUser || !linkKey) return;
+    const base = `stats/${linkKey}`;
+    const day = `${base}/d/${dayKey(Date.now())}`;
+    const updates = {
+      [`${day}/${type}`]: firebase.database.ServerValue.increment(1),
+      [`${day}/u/${currentUser.key}`]: true
+    };
+    if(type === 'a') updates[`${base}/last`] = firebase.database.ServerValue.TIMESTAMP;
+    db.ref().update(updates).catch(err => console.error('Erro ao registrar acesso:', err));
+  }
+
+  function computeStats(linkKey){
+    const s = stats[linkKey] || {};
+    const cutoff = dayKey(Date.now() - (STATS_DAYS - 1) * 86400000);
+    let accesses = 0, copies = 0;
+    const people = new Set();
+    Object.entries(s.d || {}).forEach(([day, v]) => {
+      if(day < cutoff || !v) return;
+      accesses += v.a || 0;
+      copies += v.c || 0;
+      Object.keys(v.u || {}).forEach(u => people.add(u));
+    });
+    return { accesses, copies, people: people.size, last: s.last || null };
+  }
+
+  function lastAccessText(ts){
+    if(!ts) return 'nenhum registrado';
+    const days = Math.round((new Date(dayKey(Date.now())) - new Date(dayKey(ts))) / 86400000);
+    if(days <= 0) return 'hoje';
+    if(days === 1) return 'ontem';
+    return `há ${days} dias`;
+  }
+
+  function statsHtml(linkKey){
+    const s = computeStats(linkKey);
+    const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+    const tip = [
+      `${plural(s.accesses, 'acesso', 'acessos')} nos últimos ${STATS_DAYS} dias`,
+      plural(s.people, 'pessoa', 'pessoas'),
+      `último acesso: ${lastAccessText(s.last)}`,
+      s.copies ? `link copiado ${plural(s.copies, 'vez', 'vezes')}` : ''
+    ].filter(Boolean).join(' · ');
+
+    if(s.accesses === 0){
+      return `<span class="card-stats zero" data-stats="${escapeHtml(linkKey)}" title="${escapeHtml(tip)}">sem acessos</span>`;
+    }
+    return `<span class="card-stats" data-stats="${escapeHtml(linkKey)}" title="${escapeHtml(tip)}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_EYE}</svg>${s.accesses}
+    </span>`;
+  }
+
+  // Atualiza só os contadores, sem redesenhar os cards (evita recarregar os prints).
+  function updateStatsUI(){
+    document.querySelectorAll('.card-stats[data-stats]').forEach(el => {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = statsHtml(el.dataset.stats).trim();
+      el.replaceWith(tmp.firstElementChild);
+    });
+  }
+
+  function changeSort(){
+    sortMode = document.getElementById('sortSelect').value;
+    render();
+  }
+
+  // O master apaga dias muito antigos para o banco não crescer sem limite.
+  let statsPruned = false;
+  function pruneOldStats(){
+    if(statsPruned || !isMaster()) return;
+    statsPruned = true;
+    const cutoff = dayKey(Date.now() - STATS_KEEP_DAYS * 86400000);
+    const updates = {};
+    Object.entries(stats).forEach(([linkKey, s]) => {
+      if(!links.some(l => l.key === linkKey)){
+        updates[`stats/${linkKey}`] = null; // link que já foi excluído
+        return;
+      }
+      Object.keys((s && s.d) || {}).forEach(day => {
+        if(day < cutoff) updates[`stats/${linkKey}/d/${day}`] = null;
+      });
+    });
+    if(Object.keys(updates).length) db.ref().update(updates);
+  }
+
+  let statsLoaded = false, linksLoaded = false;
+  statsRef.on('value', snapshot => {
+    stats = snapshot.val() || {};
+    statsLoaded = true;
+    if(isMaster() && sortMode !== 'manual') render();
+    else updateStatsUI();
+    if(linksLoaded) pruneOldStats();
+  }, error => console.error('Erro ao ler estatísticas:', error));
+
+  function cardKeyFromEvent(e){
+    if(e.target.closest('[data-action]')) return null;
+    const card = e.target.closest('.card');
+    return card ? card.dataset.key : null;
+  }
+
+  // Botão do meio do mouse (abrir em nova aba) também conta como acesso.
+  document.getElementById('grid').addEventListener('auxclick', (e) => {
+    if(e.button !== 1) return;
+    const key = cardKeyFromEvent(e);
+    if(key) registerAccess(key, 'a');
+  });
+
+  // Um único listener para todos os botões dos cards (e para contar acessos).
   document.getElementById('grid').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action]');
-    if(!btn) return;
+    if(!btn){
+      const key = cardKeyFromEvent(e);
+      if(key) registerAccess(key, 'a');
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     const card = btn.closest('.card');
@@ -1282,7 +1462,7 @@
     if(!link) return;
 
     switch(btn.dataset.action){
-      case 'copy':     copyLink(link.url, btn); break;
+      case 'copy':     copyLink(link.url, btn); registerAccess(link.key, 'c'); break;
       case 'delete':   deleteCard(link); break;
       case 'toggle':   togglePreview(link); break;
       case 'fallback': setFallbackPreview(link); break;
@@ -1432,7 +1612,11 @@
 
   function confirmDelete(){
     if(isMaster() && pendingDeleteKey){
-      linksRef.child(pendingDeleteKey).remove();
+      // Apaga o card e as estatísticas dele juntos.
+      db.ref().update({
+        [`links/${pendingDeleteKey}`]: null,
+        [`stats/${pendingDeleteKey}`]: null
+      });
     }
     closeDeleteModal();
   }
@@ -1452,7 +1636,9 @@
   linksRef.on('value', snapshot => {
     const data = snapshot.val() || {};
     links = Object.entries(data).map(([key, val]) => ({ key, ...val }));
+    linksLoaded = true;
     render();
+    if(statsLoaded) pruneOldStats();
     statusMsg.textContent = '· conectado';
   }, error => {
     statusMsg.textContent = '· erro de conexão com o banco';
