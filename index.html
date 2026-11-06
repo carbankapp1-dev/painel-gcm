@@ -118,7 +118,6 @@
   .add-bar button:hover{ background:#fff; color: var(--navy); }
 
   .add-toggle-btn{
-    margin-left:auto;
     background: rgba(255,255,255,0.08);
     color:#fff;
     border:1.5px solid rgba(255,255,255,0.5);
@@ -212,39 +211,6 @@
     font-size:0.66rem;
   }
 
-  .add-password-row{
-    display:flex;
-    gap:8px;
-    align-items:center;
-    flex-wrap:wrap;
-    padding-top:12px;
-  }
-  .add-password-row input{
-    width:160px;
-    border:1px solid transparent;
-    border-radius:7px;
-    padding:7px 10px;
-    font-size:0.8rem;
-    background: rgba(255,255,255,0.95);
-  }
-  .add-password-row input:focus{ outline:2px solid var(--gold); border-color:transparent; }
-  .add-password-row button{
-    background: var(--gold);
-    color: var(--navy-deep);
-    border:none;
-    border-radius:7px;
-    padding: 7px 14px;
-    font-weight:700;
-    font-size:0.8rem;
-    cursor:pointer;
-    white-space:nowrap;
-  }
-  .add-password-row button:hover{ filter:brightness(1.08); }
-  .password-error{
-    color:#ff9b9b;
-    font-size:0.7rem;
-    width:100%;
-  }
 
   .modal-overlay{
     position:fixed;
@@ -576,6 +542,135 @@
     padding: 40px 20px;
   }
 
+  /* ===== Login, usuários e perfis ===== */
+  .header-right{
+    margin-left:auto;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .master-only{ display:none !important; }
+  body.is-master .master-only{ display:flex !important; }
+  body:not(.is-master) .grip{ display:none; }
+
+  .user-area{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:#dfe6f2;
+    font-size:0.78rem;
+    white-space:nowrap;
+  }
+  .user-area strong{ color:#fff; }
+  .role-badge{
+    background: var(--gold);
+    color: var(--navy-deep);
+    font-size:0.58rem;
+    font-weight:700;
+    padding:2px 7px;
+    border-radius:10px;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+  }
+
+  .login-overlay{
+    position:fixed;
+    inset:0;
+    z-index:2000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background: linear-gradient(135deg, var(--navy-deep), var(--navy));
+  }
+  .login-overlay.hidden{ display:none; }
+  .login-box{
+    background:#fff;
+    border-radius:12px;
+    border-top:4px solid var(--gold);
+    max-width:340px;
+    width:100%;
+    padding:26px 24px 22px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+  }
+  .login-box h2{ font-size:1.2rem; color:var(--ink); margin-bottom:6px; }
+  .login-box p{ font-size:0.82rem; color:var(--muted); line-height:1.4; margin-bottom:14px; }
+  .login-box input{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:10px 12px;
+    font-size:0.9rem;
+    margin-bottom:8px;
+  }
+  .login-box input:focus{ outline:2px solid var(--gold); border-color:transparent; }
+  .login-btn{
+    width:100%;
+    background: var(--navy);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:10px;
+    font-weight:700;
+    font-size:0.88rem;
+    cursor:pointer;
+  }
+  .login-btn:hover{ background: var(--navy-light); }
+  .login-btn:disabled{ opacity:0.6; cursor:wait; }
+
+  .users-box{ max-width:420px; }
+  .users-add{ display:flex; gap:8px; }
+  .users-add input{ flex:1; margin-bottom:6px; }
+  .users-add button{
+    background: var(--navy);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:0 16px;
+    height:38px;
+    font-weight:600;
+    font-size:0.82rem;
+    cursor:pointer;
+  }
+  .users-add button:hover{ background: var(--navy-light); }
+  .users-list{
+    list-style:none;
+    max-height:280px;
+    overflow-y:auto;
+    border:1px solid var(--line);
+    border-radius:8px;
+    margin-bottom:14px;
+  }
+  .users-list li{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    font-size:0.84rem;
+    border-bottom:1px solid var(--line);
+  }
+  .users-list li:last-child{ border-bottom:none; }
+  .users-list .u-name{ flex:1; }
+  .users-list .u-remove{
+    background:none;
+    border:1px solid var(--line);
+    border-radius:6px;
+    color:#c0392b;
+    font-size:0.74rem;
+    padding:4px 10px;
+    cursor:pointer;
+  }
+  .users-list .u-remove:hover{ background:#c0392b; color:#fff; border-color:#c0392b; }
+  .users-list .u-empty{ color:var(--muted); justify-content:center; }
+
+  /* Em telas de toque não existe hover: mostra os botões do master sempre. */
+  @media (hover: none){
+    .card .card-delete,
+    .card .card-toggle,
+    .card .card-fallback-btn{ display:flex; align-items:center; justify-content:center; }
+  }
+
   @media (max-width: 1024px){
     .grid{ grid-template-columns: repeat(4, 1fr); }
   }
@@ -583,16 +678,28 @@
     .grid{ grid-template-columns: repeat(2, 1fr); gap:10px; }
     header{ flex-direction:column; align-items:stretch; padding: 14px 16px; }
     header h1{ font-size: 1.3rem; text-align:center; }
-    .add-toggle-btn{ margin-left:0; align-self:center; }
+    .header-right{ margin-left:0; justify-content:center; }
     .add-bar{ justify-content:center; }
     .add-bar input{ width: 100%; flex:1; min-width:120px; }
-    .add-panel.open{ max-height:260px; }
-    .add-password-row input{ width:100%; flex:1; }
+    .add-panel.open{ max-height:340px; }
     .search-wrap{ order:3; width:100%; }
   }
 </style>
 </head>
 <body>
+
+<!-- Tela de login -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>Painel de Sistemas</h2>
+    <p id="loginText">Conectando...</p>
+    <input id="loginName" type="text" placeholder="Seu primeiro nome" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+    <input id="loginPass" class="pw-mask" type="text" placeholder="Senha do master" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="display:none;">
+    <input id="loginPass2" class="pw-mask" type="text" placeholder="Confirme a senha" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="display:none;">
+    <div class="modal-error" id="loginError"></div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled>Entrar</button>
+  </div>
+</div>
 
 <header>
   <h1>Painel de Sistemas<span id="statusMsg"></span></h1>
@@ -605,45 +712,48 @@
     <input id="searchInput" type="search" name="painel-search-nao-autofill" placeholder="Buscar sistema..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" oninput="filterLinks()">
   </div>
 
-  <button class="add-toggle-btn" id="addToggleBtn" title="Adicionar sistema" onclick="toggleAddPanel()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19"></line>
-      <line x1="5" y1="12" x2="19" y2="12"></line>
-    </svg>
-  </button>
+  <div class="header-right">
+    <button class="btn-voltar master-only" title="Gerenciar usuários" onclick="openUsersModal()">Usuários</button>
+
+    <button class="add-toggle-btn master-only" id="addToggleBtn" title="Adicionar sistema" onclick="toggleAddPanel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+
+    <div class="user-area">
+      <span>Olá, <strong id="userName"></strong></span>
+      <span class="role-badge" id="roleBadge" style="display:none;">master</span>
+      <button class="btn-voltar" onclick="logout()">Sair</button>
+    </div>
+  </div>
 
   <div class="add-panel" id="addPanel">
-    <div class="add-password-row" id="addPasswordRow">
-      <input id="addPassword" class="pw-mask" type="text" placeholder="Senha de acesso" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-      <button onclick="checkPassword()">Entrar</button>
-      <button class="btn-voltar" onclick="closeAddPanel()">Voltar</button>
-      <span class="password-error" id="passwordError"></span>
-    </div>
-
-    <div class="add-bar" id="addBar" style="display:none;">
+    <div class="add-bar" id="addBar" style="padding-top:12px;">
       <input id="newTitle" type="text" placeholder="Nome do sistema (ex: Portal Gravames)">
       <input id="newUrl" type="text" placeholder="https://link-do-sistema.com">
       <label><input id="newNoPreview" type="checkbox"> Link interno (sem prévia)</label>
       <input id="newFallbackPreview" type="text" placeholder="Print em /prints (ex: portal-gravames.png)">
       <button onclick="addCard()">Adicionar card</button>
+      <button class="btn-voltar" onclick="closeAddPanel()">Fechar</button>
     </div>
-    <div class="add-hint" id="addHint" style="display:none;">Suba o print na pasta <code>prints</code> do repositório e digite o nome do arquivo aqui. Sem isso, o card fica marcado como "sem print definido".</div>
+    <div class="add-hint">Suba o print na pasta <code>prints</code> do repositório e digite o nome do arquivo aqui. Sem isso, o card fica marcado como "sem print definido".</div>
   </div>
 </header>
 
 <main>
   <div class="grid" id="grid"></div>
-  <p class="empty" id="emptyMsg" style="display:none;">Nenhum link cadastrado ainda. Adicione um acima.</p>
+  <p class="empty" id="emptyMsg" style="display:none;">Nenhum link cadastrado ainda.</p>
 </main>
 
 <div class="copy-toast" id="copyToast">Link copiado!</div>
 
+<!-- Modal: excluir card -->
 <div class="modal-overlay" id="deleteModal">
   <div class="modal-box">
     <h2>Excluir card</h2>
     <p>Tem certeza que deseja excluir <strong id="deleteCardName">este card</strong>? Essa ação não pode ser desfeita.</p>
-    <input id="deletePassword" class="pw-mask" type="text" placeholder="Senha de acesso" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-    <div class="modal-error" id="deleteError"></div>
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeDeleteModal()">Cancelar</button>
       <button class="modal-confirm" onclick="confirmDelete()">Excluir</button>
@@ -651,11 +761,24 @@
   </div>
 </div>
 
+<!-- Modal: gerenciar usuários (só master) -->
+<div class="modal-overlay" id="usersModal">
+  <div class="modal-box users-box">
+    <h2>Usuários</h2>
+    <p>Cadastre o primeiro nome de quem pode acessar o painel. Se houver dois com o mesmo nome, use algo como <strong>Ana Paula</strong> ou <strong>Ana S</strong>.</p>
+    <div class="users-add">
+      <input id="newUserName" type="text" placeholder="Primeiro nome" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+      <button onclick="addUser()">Incluir</button>
+    </div>
+    <div class="modal-error" id="usersError"></div>
+    <ul class="users-list" id="usersList"></ul>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeUsersModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  // ============================================================
-  // 1) COLE AQUI a configuração do SEU projeto Firebase.
-  //    Veja o passo a passo enviado no chat pra pegar esses valores.
-  // ============================================================
   const firebaseConfig = {
     apiKey: "AIzaSyAxPlVgXzjaD5xRQwXRua9vxR5EhCNEvIc",
     authDomain: "painel-gcm.firebaseapp.com",
@@ -669,6 +792,7 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const linksRef = db.ref('links');
+  const usersRef = db.ref('users');
 
   // Links usados apenas para popular o banco na primeira vez que ele estiver vazio.
   const seedLinks = [
@@ -678,30 +802,351 @@
     { title: "Baixa Temporária - Ofício", url: "https://demandassp1-vw.github.io/baixa-temporaria-oficio/", order: 3 }
   ];
 
-  let links = []; // { key, title, url, order }
+  let links = []; // { key, title, url, order, noPreview, fallbackPreview }
   let draggedKey = null;
   let searchTerm = '';
   const statusMsg = document.getElementById('statusMsg');
 
+  // ============================================================
+  // Utilidades
+  // ============================================================
+  function escapeHtml(s){
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  // Só aceita links http/https (bloqueia "javascript:" e afins).
+  function safeUrl(u){
+    return /^https?:\/\//i.test(u || '') ? u : '#';
+  }
+
+  // "João Paulo" -> "joao-paulo" (chave usada no banco; ignora acento e maiúsculas)
+  function nameKey(name){
+    return String(name || '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .trim().toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  // "joão paulo" -> "João Paulo"
+  function prettyName(name){
+    return String(name || '').trim().replace(/\s+/g, ' ').replace(/(^|\s)\S/g, c => c.toUpperCase());
+  }
+
+  async function hashPassword(pw){
+    const data = new TextEncoder().encode('painel-gcm:' + pw);
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // ============================================================
+  // Login e perfis
+  // AVISO: é uma barreira de uso para o time, não segurança forte.
+  // Quem tiver conhecimento técnico consegue acessar o banco direto;
+  // proteção de verdade exige Firebase Auth + regras no banco.
+  // ============================================================
+  const SESSION_KEY = 'painel-sessao';
+  let users = {};          // { chave: { name, role: 'master'|'user', passHash? } }
+  let usersLoaded = false;
+  let sessionChecked = false;
+  let currentUser = null;  // { key, name, role, passHash? }
+  let loginStep = 'loading'; // loading | setup | name | password
+
+  const loginName  = document.getElementById('loginName');
+  const loginPass  = document.getElementById('loginPass');
+  const loginPass2 = document.getElementById('loginPass2');
+  const loginError = document.getElementById('loginError');
+
+  function isMaster(){
+    return !!currentUser && currentUser.role === 'master';
+  }
+
+  function setLoginStep(step, text){
+    loginStep = step;
+    document.getElementById('loginText').textContent = text;
+    loginPass.style.display  = (step === 'setup' || step === 'password') ? 'block' : 'none';
+    loginPass2.style.display = step === 'setup' ? 'block' : 'none';
+    loginPass.placeholder = step === 'setup' ? 'Crie uma senha de master' : 'Senha do master';
+    const btn = document.getElementById('loginBtn');
+    btn.textContent = step === 'setup' ? 'Criar master e entrar' : 'Entrar';
+    btn.disabled = step === 'loading';
+  }
+
+  function resetLoginStep(){
+    if(!usersLoaded){
+      setLoginStep('loading', 'Conectando...');
+    } else if(Object.keys(users).length === 0){
+      setLoginStep('setup', 'Primeiro acesso: cadastre-se como master (administrador). Digite seu primeiro nome e crie uma senha.');
+    } else {
+      setLoginStep('name', 'Digite seu primeiro nome para acessar.');
+    }
+  }
+
+  function showLogin(msg){
+    document.getElementById('loginOverlay').classList.remove('hidden');
+    loginPass.value = '';
+    loginPass2.value = '';
+    loginError.textContent = msg || '';
+    resetLoginStep();
+    setTimeout(() => loginName.focus(), 100);
+  }
+
+  async function doLogin(){
+    if(loginStep === 'loading') return;
+    loginError.textContent = '';
+    const name = prettyName(loginName.value);
+    const key = nameKey(name);
+    if(!key){
+      loginError.textContent = 'Digite seu nome.';
+      loginName.focus();
+      return;
+    }
+
+    // Primeiro acesso: cria o master.
+    if(loginStep === 'setup'){
+      if(loginPass.value.length < 4){
+        loginError.textContent = 'A senha precisa ter pelo menos 4 caracteres.';
+        return;
+      }
+      if(loginPass.value !== loginPass2.value){
+        loginError.textContent = 'As senhas não conferem.';
+        return;
+      }
+      try{
+        const master = { name, role: 'master', passHash: await hashPassword(loginPass.value) };
+        // transaction: só grava se ainda não existir nenhum usuário.
+        const result = await usersRef.transaction(cur => cur ? undefined : { [key]: master });
+        if(!result.committed){
+          loginError.textContent = 'Já existe um master cadastrado. Entre com seu nome.';
+          resetLoginStep();
+          return;
+        }
+        enterAs(key, master);
+      } catch(e){
+        console.error(e);
+        loginError.textContent = 'Erro ao salvar no banco: ' + e.message;
+      }
+      return;
+    }
+
+    const user = users[key];
+    if(!user){
+      loginError.textContent = 'Nome não cadastrado. Peça acesso ao administrador.';
+      return;
+    }
+
+    if(user.role === 'master'){
+      if(loginStep !== 'password'){
+        setLoginStep('password', `Olá, ${user.name}! Digite sua senha de master.`);
+        loginPass.value = '';
+        loginPass.focus();
+        return;
+      }
+      if(await hashPassword(loginPass.value) !== user.passHash){
+        loginError.textContent = 'Senha incorreta.';
+        loginPass.value = '';
+        loginPass.focus();
+        return;
+      }
+    }
+
+    enterAs(key, user);
+  }
+
+  function enterAs(key, user){
+    currentUser = { key, ...user };
+    try{
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ key, h: user.passHash || null }));
+    } catch(e){}
+    document.getElementById('loginOverlay').classList.add('hidden');
+    loginName.value = '';
+    loginPass.value = '';
+    loginPass2.value = '';
+    loginError.textContent = '';
+    applyRole();
+  }
+
+  function logout(msg){
+    currentUser = null;
+    try{ localStorage.removeItem(SESSION_KEY); } catch(e){}
+    closeAddPanel();
+    closeUsersModal();
+    closeDeleteModal();
+    applyRole();
+    showLogin(msg);
+  }
+
+  function tryRestoreSession(){
+    let saved = null;
+    try{ saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch(e){}
+    if(!saved || !saved.key) return false;
+    const user = users[saved.key];
+    if(!user) return false;
+    if(user.role === 'master' && saved.h !== user.passHash) return false;
+    enterAs(saved.key, user);
+    return true;
+  }
+
+  function applyRole(){
+    const master = isMaster();
+    document.body.classList.toggle('is-master', master);
+    document.getElementById('userName').textContent = currentUser ? currentUser.name : '';
+    document.getElementById('roleBadge').style.display = master ? 'inline-block' : 'none';
+    render();
+  }
+
+  loginName.addEventListener('input', () => {
+    // Se trocou o nome enquanto pedia a senha do master, volta para o passo do nome.
+    if(loginStep === 'password'){
+      loginPass.value = '';
+      resetLoginStep();
+    }
+  });
+  [loginName, loginPass, loginPass2].forEach(el =>
+    el.addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); })
+  );
+
+  // Usuários em tempo real: se o master excluir alguém, essa pessoa sai na hora.
+  usersRef.on('value', snapshot => {
+    users = snapshot.val() || {};
+    usersLoaded = true;
+
+    if(currentUser){
+      const u = users[currentUser.key];
+      if(!u){
+        logout('Seu acesso foi removido pelo administrador.');
+      } else {
+        currentUser = { key: currentUser.key, ...u };
+        applyRole();
+      }
+    } else if(!sessionChecked){
+      sessionChecked = true;
+      if(!tryRestoreSession()) showLogin();
+    } else if(loginStep !== 'password'){
+      resetLoginStep();
+    }
+
+    renderUsersList();
+  }, error => {
+    console.error(error);
+    setLoginStep('loading', 'Erro ao conectar com o banco. Verifique a internet e recarregue a página.');
+  });
+
+  // ============================================================
+  // Gerenciar usuários (só master)
+  // ============================================================
+  function openUsersModal(){
+    if(!isMaster()) return;
+    document.getElementById('usersError').textContent = '';
+    document.getElementById('newUserName').value = '';
+    renderUsersList();
+    document.getElementById('usersModal').classList.add('show');
+    setTimeout(() => document.getElementById('newUserName').focus(), 100);
+  }
+
+  function closeUsersModal(){
+    document.getElementById('usersModal').classList.remove('show');
+  }
+
+  function renderUsersList(){
+    const ul = document.getElementById('usersList');
+    const entries = Object.entries(users).sort(([, a], [, b]) =>
+      ((b.role === 'master') - (a.role === 'master')) ||
+      String(a.name).localeCompare(String(b.name), 'pt-BR')
+    );
+    if(entries.length === 0){
+      ul.innerHTML = '<li class="u-empty">Nenhum usuário cadastrado.</li>';
+      return;
+    }
+    ul.innerHTML = entries.map(([key, u]) => `
+      <li>
+        <span class="u-name">${escapeHtml(u.name)}</span>
+        ${u.role === 'master'
+          ? '<span class="role-badge">master</span>'
+          : `<button class="u-remove" data-key="${escapeHtml(key)}">Excluir</button>`}
+      </li>
+    `).join('');
+  }
+
+  function addUser(){
+    if(!isMaster()) return;
+    const input = document.getElementById('newUserName');
+    const errorEl = document.getElementById('usersError');
+    const name = prettyName(input.value);
+    const key = nameKey(name);
+    errorEl.textContent = '';
+
+    if(!key){
+      errorEl.textContent = 'Digite um nome.';
+      return;
+    }
+    if(users[key]){
+      errorEl.textContent = `"${users[key].name}" já está cadastrado.`;
+      return;
+    }
+
+    usersRef.child(key).set({
+      name,
+      role: 'user',
+      createdBy: currentUser.name,
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      input.value = '';
+      input.focus();
+    }).catch(e => {
+      console.error(e);
+      errorEl.textContent = 'Erro ao salvar: ' + e.message;
+    });
+  }
+
+  function removeUser(key){
+    if(!isMaster()) return;
+    const u = users[key];
+    if(!u || u.role === 'master') return;
+    if(!window.confirm(`Remover o acesso de ${u.name}?`)) return;
+    usersRef.child(key).remove();
+  }
+
+  document.getElementById('usersList').addEventListener('click', e => {
+    const btn = e.target.closest('.u-remove');
+    if(btn) removeUser(btn.dataset.key);
+  });
+  document.getElementById('newUserName').addEventListener('keydown', e => {
+    if(e.key === 'Enter') addUser();
+  });
+  document.getElementById('usersModal').addEventListener('click', e => {
+    if(e.target.id === 'usersModal') closeUsersModal();
+  });
+
+  // ============================================================
+  // Cards
+  // ============================================================
   function filterLinks(){
     searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
     render();
   }
 
   // Print manual (pasta /prints do repositório) é a única fonte de prévia.
-  // Se a imagem não carregar (nome errado ou arquivo ainda não enviado),
-  // mostra o texto de aviso em vez de tentar qualquer serviço externo.
   function handleScreenshotError(img){
     img.previousElementSibling.textContent = 'Prévia indisponível';
   }
+
+  const ICON_EYE = '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle>';
+  const ICON_EYE_OFF = '<path d="M1 1l22 22"></path><path d="M9.9 4.2A10 10 0 0 1 22 12a10.4 10.4 0 0 1-1.3 2.6M6.5 6.5A10.4 10.4 0 0 0 2 12a10 10 0 0 0 16.6 3.1"></path>';
 
   function render(){
     const grid = document.getElementById('grid');
     const emptyMsg = document.getElementById('emptyMsg');
     grid.innerHTML = '';
 
+    if(!currentUser) return;
+
     if(links.length === 0){
-      emptyMsg.textContent = 'Nenhum link cadastrado ainda. Adicione um acima.';
+      emptyMsg.textContent = isMaster()
+        ? 'Nenhum link cadastrado ainda. Adicione um no botão +.'
+        : 'Nenhum link cadastrado ainda.';
       emptyMsg.style.display = 'block';
       return;
     }
@@ -719,39 +1164,44 @@
     }
     emptyMsg.style.display = 'none';
 
+    const master = isMaster();
     const sorted = [...filteredLinks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
     sorted.forEach(link => {
       const card = document.createElement('a');
       card.className = 'card';
-      card.href = link.url;
+      card.href = safeUrl(link.url);
       card.target = '_blank';
       card.rel = 'noopener noreferrer';
-      card.draggable = true;
+      card.draggable = master;
       card.dataset.key = link.key;
 
       let hostname = '';
-      try { hostname = new URL(link.url).hostname; } catch(e) { hostname = link.url; }
+      try { hostname = new URL(link.url).hostname; } catch(e) { hostname = link.url || ''; }
 
-      card.innerHTML = `
-        <button class="card-delete" title="Remover card" onclick="deleteCard(event, '${link.key}', '${link.title.replace(/'/g, "\\'")}')">✕</button>
-        <button class="card-toggle" title="${link.noPreview ? 'Tentar mostrar prévia real' : 'Marcar como link interno (sem prévia)'}" onclick="togglePreview(event, '${link.key}', ${!!link.noPreview})">
+      const title = escapeHtml(link.title || '(sem nome)');
+
+      const masterButtons = master ? `
+        <button class="card-delete" data-action="delete" title="Remover card">✕</button>
+        <button class="card-toggle" data-action="toggle" title="${link.noPreview ? 'Tentar mostrar prévia real' : 'Marcar como link interno (sem prévia)'}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            ${link.noPreview
-              ? '<path d="M1 1l22 22"></path><path d="M9.9 4.2A10 10 0 0 1 22 12a10.4 10.4 0 0 1-1.3 2.6M6.5 6.5A10.4 10.4 0 0 0 2 12a10 10 0 0 0 16.6 3.1"></path>'
-              : '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle>'}
+            ${link.noPreview ? ICON_EYE_OFF : ICON_EYE}
           </svg>
         </button>
-        <button class="card-fallback-btn ${link.fallbackPreview ? 'has-fallback' : ''}" title="${link.fallbackPreview ? 'Editar print de backup (/' + link.fallbackPreview + ')' : 'Definir print de backup manual'}" onclick="setFallbackPreview(event, '${link.key}', '${(link.fallbackPreview || '').replace(/'/g, "\\'")}')">
+        <button class="card-fallback-btn ${link.fallbackPreview ? 'has-fallback' : ''}" data-action="fallback" title="${link.fallbackPreview ? 'Editar print de backup (/' + escapeHtml(link.fallbackPreview) + ')' : 'Definir print de backup manual'}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2"></rect>
             <circle cx="8.5" cy="8.5" r="1.5"></circle>
             <path d="M21 15l-5-5L5 21"></path>
           </svg>
         </button>
+      ` : '';
+
+      card.innerHTML = `
+        ${masterButtons}
         <div class="card-title">
           <span class="grip">⋮⋮</span>
-          <span class="title-text">${link.title}</span>
+          <span class="title-text">${title}</span>
           <span class="dot"></span>
         </div>
         <div class="browser-frame">
@@ -770,7 +1220,7 @@
             </div>
           ` : link.fallbackPreview ? `
             <div class="loading">Carregando prévia...</div>
-            <img loading="lazy" src="${link.fallbackPreview}" alt="Prévia de ${link.title}"
+            <img loading="lazy" src="${escapeHtml(link.fallbackPreview)}" alt="Prévia de ${title}"
                  onload="this.previousElementSibling.style.display='none'"
                  onerror="handleScreenshotError(this)">
           ` : `
@@ -785,8 +1235,8 @@
           `}
         </div>
         <div class="card-footer">
-          <span class="hostname">${hostname}</span>
-          <button class="card-copy" title="Copiar link" onclick="copyLink(event, '${link.url.replace(/'/g, "\\'")}', this)">
+          <span class="hostname">${escapeHtml(hostname)}</span>
+          <button class="card-copy" data-action="copy" title="Copiar link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="12" height="12" rx="2"></rect>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -795,31 +1245,52 @@
         </div>
       `;
 
-      card.addEventListener('dragstart', () => {
-        draggedKey = link.key;
-        card.classList.add('dragging');
-      });
-      card.addEventListener('dragend', () => {
-        card.classList.remove('dragging');
-      });
-      card.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        if(link.key !== draggedKey) card.classList.add('drag-over');
-      });
-      card.addEventListener('dragleave', () => {
-        card.classList.remove('drag-over');
-      });
-      card.addEventListener('drop', (e) => {
-        e.preventDefault();
-        card.classList.remove('drag-over');
-        reorderCards(draggedKey, link.key);
-      });
+      if(master){
+        card.addEventListener('dragstart', () => {
+          draggedKey = link.key;
+          card.classList.add('dragging');
+        });
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+        });
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          if(link.key !== draggedKey) card.classList.add('drag-over');
+        });
+        card.addEventListener('dragleave', () => {
+          card.classList.remove('drag-over');
+        });
+        card.addEventListener('drop', (e) => {
+          e.preventDefault();
+          card.classList.remove('drag-over');
+          reorderCards(draggedKey, link.key);
+        });
+      }
 
       grid.appendChild(card);
     });
   }
 
+  // Um único listener para todos os botões dos cards.
+  document.getElementById('grid').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if(!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const card = btn.closest('.card');
+    const link = card && links.find(l => l.key === card.dataset.key);
+    if(!link) return;
+
+    switch(btn.dataset.action){
+      case 'copy':     copyLink(link.url, btn); break;
+      case 'delete':   deleteCard(link); break;
+      case 'toggle':   togglePreview(link); break;
+      case 'fallback': setFallbackPreview(link); break;
+    }
+  });
+
   function reorderCards(fromKey, toKey){
+    if(!isMaster()) return;
     if(!fromKey || fromKey === toKey) return;
 
     const sorted = [...links].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -841,34 +1312,16 @@
     db.ref().update(updates);
   }
 
-  // ============================================================
-  // Painel de "Adicionar sistema" protegido por senha.
-  // AVISO: como é uma página estática, essa senha fica no código-fonte
-  // (visível a quem inspecionar o HTML). Serve como barreira de uso para
-  // o time, não como segurança contra alguém tecnicamente decidido.
-  // ============================================================
-  const ADD_PASSWORD = "@asdf";
-
   function toggleAddPanel(){
+    if(!isMaster()) return;
     const panel = document.getElementById('addPanel');
-    const toggleBtn = document.getElementById('addToggleBtn');
-    const isOpen = panel.classList.contains('open');
-
-    if(isOpen){
-      panel.classList.remove('open');
-      toggleBtn.classList.remove('open');
+    if(panel.classList.contains('open')){
+      closeAddPanel();
       return;
     }
-
     panel.classList.add('open');
-    toggleBtn.classList.add('open');
-    document.getElementById('addPasswordRow').style.display = 'flex';
-    document.getElementById('addBar').style.display = 'none';
-    document.getElementById('addHint').style.display = 'none';
-    const pwInput = document.getElementById('addPassword');
-    pwInput.value = '';
-    document.getElementById('passwordError').textContent = '';
-    setTimeout(() => pwInput.focus(), 150);
+    document.getElementById('addToggleBtn').classList.add('open');
+    setTimeout(() => document.getElementById('newTitle').focus(), 150);
   }
 
   function closeAddPanel(){
@@ -876,36 +1329,8 @@
     document.getElementById('addToggleBtn').classList.remove('open');
   }
 
-  function showAddBar(){
-    document.getElementById('addPasswordRow').style.display = 'none';
-    document.getElementById('addBar').style.display = 'flex';
-    document.getElementById('addHint').style.display = 'block';
-  }
-
-  function checkPassword(){
-    const pwInput = document.getElementById('addPassword');
-    const errorEl = document.getElementById('passwordError');
-
-    if(pwInput.value === ADD_PASSWORD){
-      errorEl.textContent = '';
-      showAddBar();
-    } else {
-      errorEl.textContent = 'Senha incorreta.';
-      pwInput.value = '';
-      pwInput.focus();
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const pwInput = document.getElementById('addPassword');
-    if(pwInput){
-      pwInput.addEventListener('keydown', (e) => {
-        if(e.key === 'Enter') checkPassword();
-      });
-    }
-  });
-
   function addCard(){
+    if(!isMaster()) return;
     const titleInput = document.getElementById('newTitle');
     const urlInput = document.getElementById('newUrl');
     const noPreviewInput = document.getElementById('newNoPreview');
@@ -921,8 +1346,7 @@
     if(!/^https?:\/\//i.test(url)){
       url = 'https://' + url;
     }
-    // Se a pessoa digitar só o nome do arquivo (ex: "portal.png"), completa
-    // com o caminho da pasta /prints do repositório automaticamente.
+    // Se digitar só o nome do arquivo (ex: "portal.png"), completa com a pasta /prints.
     if(fallbackPreview && !/^(https?:\/\/|\/|prints\/)/i.test(fallbackPreview)){
       fallbackPreview = 'prints/' + fallbackPreview;
     }
@@ -935,10 +1359,7 @@
     fallbackInput.value = '';
   }
 
-  function copyLink(event, url, btn){
-    event.preventDefault();
-    event.stopPropagation();
-
+  function copyLink(url, btn){
     const showFeedback = () => {
       const toast = document.getElementById('copyToast');
       toast.classList.add('show');
@@ -974,21 +1395,17 @@
     document.body.removeChild(ta);
   }
 
-  function togglePreview(event, key, current){
-    event.preventDefault();
-    event.stopPropagation();
-    linksRef.child(key).update({ noPreview: !current });
+  function togglePreview(link){
+    if(!isMaster()) return;
+    linksRef.child(link.key).update({ noPreview: !link.noPreview });
   }
 
-  // Define ou edita o print de backup manual (arquivo dentro da pasta /prints
-  // do repositório) para um card já cadastrado.
-  function setFallbackPreview(event, key, current){
-    event.preventDefault();
-    event.stopPropagation();
-
+  // Define ou edita o print de backup manual (arquivo dentro da pasta /prints).
+  function setFallbackPreview(link){
+    if(!isMaster()) return;
     const input = window.prompt(
       'Nome do arquivo em /prints para este card (ex: portal-gravames.png).\nDeixe em branco para remover o print de backup.',
-      current || ''
+      link.fallbackPreview || ''
     );
     if(input === null) return; // cancelou
 
@@ -996,21 +1413,16 @@
     if(value && !/^(https?:\/\/|\/|prints\/)/i.test(value)){
       value = 'prints/' + value;
     }
-    linksRef.child(key).update({ fallbackPreview: value || null });
+    linksRef.child(link.key).update({ fallbackPreview: value || null });
   }
 
   let pendingDeleteKey = null;
 
-  function deleteCard(event, key, title){
-    event.preventDefault();
-    event.stopPropagation();
-    pendingDeleteKey = key;
-    document.getElementById('deleteCardName').textContent = title || 'este card';
-    document.getElementById('deletePassword').value = '';
-    document.getElementById('deleteError').textContent = '';
-    const modal = document.getElementById('deleteModal');
-    modal.classList.add('show');
-    setTimeout(() => document.getElementById('deletePassword').focus(), 100);
+  function deleteCard(link){
+    if(!isMaster()) return;
+    pendingDeleteKey = link.key;
+    document.getElementById('deleteCardName').textContent = link.title || 'este card';
+    document.getElementById('deleteModal').classList.add('show');
   }
 
   function closeDeleteModal(){
@@ -1019,17 +1431,7 @@
   }
 
   function confirmDelete(){
-    const pwInput = document.getElementById('deletePassword');
-    const errorEl = document.getElementById('deleteError');
-
-    if(pwInput.value !== ADD_PASSWORD){
-      errorEl.textContent = 'Senha incorreta.';
-      pwInput.value = '';
-      pwInput.focus();
-      return;
-    }
-
-    if(pendingDeleteKey){
+    if(isMaster() && pendingDeleteKey){
       linksRef.child(pendingDeleteKey).remove();
     }
     closeDeleteModal();
@@ -1038,12 +1440,14 @@
   document.getElementById('deleteModal').addEventListener('click', (e) => {
     if(e.target.id === 'deleteModal') closeDeleteModal();
   });
-  document.getElementById('deletePassword').addEventListener('keydown', (e) => {
-    if(e.key === 'Enter') confirmDelete();
-    if(e.key === 'Escape') closeDeleteModal();
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){
+      closeDeleteModal();
+      closeUsersModal();
+    }
   });
 
-  // Escuta o banco em tempo real: qualquer alteração (deste ou de outro computador)
+  // Escuta os links em tempo real: qualquer alteração (deste ou de outro computador)
   // atualiza a tela na hora.
   linksRef.on('value', snapshot => {
     const data = snapshot.val() || {};
